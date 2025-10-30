@@ -1,0 +1,185 @@
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import os
+from datetime import datetime
+
+class Database:
+    def __init__(self):
+        self.connection = None
+        self.connect()
+        
+    def connect(self):
+        try:
+            self.connection = psycopg2.connect(
+                os.getenv('DATABASE_URL'),
+                cursor_factory=RealDictCursor
+            )
+            self.connection.autocommit = True
+            print("Database connected successfully")
+        except Exception as e:
+            print(f"Database connection error: {e}")
+            raise
+    
+    def init_schema(self):
+        cursor = self.connection.cursor()
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                user_id BIGINT PRIMARY KEY,
+                username VARCHAR(255),
+                first_name VARCHAR(255),
+                last_name VARCHAR(255),
+                seller_balance DECIMAL(10, 2) DEFAULT 0.00,
+                buyer_wallet_balance DECIMAL(10, 2) DEFAULT 0.00,
+                referral_code VARCHAR(50) UNIQUE,
+                referred_by BIGINT,
+                referral_earnings DECIMAL(10, 2) DEFAULT 0.00,
+                is_banned BOOLEAN DEFAULT FALSE,
+                can_withdraw BOOLEAN DEFAULT TRUE,
+                user_type VARCHAR(20) DEFAULT 'seller',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (referred_by) REFERENCES users(user_id) ON DELETE SET NULL
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS admins (
+                id SERIAL PRIMARY KEY,
+                user_id BIGINT UNIQUE NOT NULL,
+                username VARCHAR(255),
+                role VARCHAR(50) DEFAULT 'admin',
+                permissions TEXT[],
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                is_active BOOLEAN DEFAULT TRUE
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sold_accounts (
+                id SERIAL PRIMARY KEY,
+                seller_user_id BIGINT NOT NULL,
+                phone_number VARCHAR(20) NOT NULL,
+                session_string TEXT NOT NULL,
+                account_status VARCHAR(20) DEFAULT 'active',
+                join_count INTEGER DEFAULT 0,
+                max_joins INTEGER DEFAULT 100,
+                is_banned BOOLEAN DEFAULT FALSE,
+                is_full BOOLEAN DEFAULT FALSE,
+                last_used TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (seller_user_id) REFERENCES users(user_id) ON DELETE CASCADE
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS withdrawals (
+                id SERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL,
+                amount DECIMAL(10, 2) NOT NULL,
+                withdrawal_method VARCHAR(50) NOT NULL,
+                withdrawal_details TEXT,
+                status VARCHAR(20) DEFAULT 'pending',
+                admin_notes TEXT,
+                requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                processed_at TIMESTAMP,
+                processed_by BIGINT,
+                FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                FOREIGN KEY (processed_by) REFERENCES admins(user_id) ON DELETE SET NULL
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_users_referral ON users(referral_code)
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_sold_accounts_status ON sold_accounts(account_status)
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_withdrawals_status ON withdrawals(status)
+        """)
+        
+        cursor.close()
+        print("Database schema initialized successfully")
+    
+    def get_user(self, user_id):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
+        user = cursor.fetchone()
+        cursor.close()
+        return user
+    
+    def is_admin(self, user_id):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT * FROM admins WHERE user_id = %s AND is_active = TRUE", (user_id,))
+        admin = cursor.fetchone()
+        cursor.close()
+        return admin is not None
+    
+    def update_user_balance(self, user_id, amount, balance_type='seller'):
+        cursor = self.connection.cursor()
+        field = 'seller_balance' if balance_type == 'seller' else 'buyer_wallet_balance'
+        cursor.execute(f"""
+            UPDATE users 
+            SET {field} = {field} + %s, updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = %s
+            RETURNING {field}
+        """, (amount, user_id))
+        result = cursor.fetchone()
+        cursor.close()
+        return result
+    
+    def get_user_by_referral(self, referral_code):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT * FROM users WHERE referral_code = %s", (referral_code,))
+        user = cursor.fetchone()
+        cursor.close()
+        return user
+    
+    def get_user_accounts_count(self, user_id):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT COUNT(*) as count FROM sold_accounts WHERE seller_user_id = %s", (user_id,))
+        result = cursor.fetchone()
+        cursor.close()
+        return result['count'] if result else 0
+    
+    def get_user_total_earnings(self, user_id):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            SELECT COALESCE(SUM(seller_balance + referral_earnings), 0) as total
+            FROM users WHERE user_id = %s
+        """, (user_id,))
+        result = cursor.fetchone()
+        cursor.close()
+        return float(result['total']) if result else 0.0
+    
+    def get_referral_count(self, user_id):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT COUNT(*) as count FROM users WHERE referred_by = %s", (user_id,))
+        result = cursor.fetchone()
+        cursor.close()
+        return result['count'] if result else 0
+    
+    def create_user(self, user_id, username=None, first_name=None, last_name=None, referral_code=None, referred_by=None):
+        cursor = self.connection.cursor()
+        try:
+            cursor.execute("""
+                INSERT INTO users (user_id, username, first_name, last_name, referral_code, referred_by)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (user_id) DO NOTHING
+                RETURNING *
+            """, (user_id, username, first_name, last_name, referral_code, referred_by))
+            user = cursor.fetchone()
+            cursor.close()
+            return user
+        except Exception as e:
+            cursor.close()
+            print(f"Error creating user: {e}")
+            return None
+    
+    def close(self):
+        if self.connection:
+            self.connection.close()
+            print("Database connection closed")
