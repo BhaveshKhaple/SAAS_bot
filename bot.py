@@ -17,6 +17,7 @@ import string
 import seller_profile
 import seller_withdrawals
 import admin_controls
+import admin_reporting
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -139,19 +140,17 @@ Need help? We're here for you!
 **Common Questions:**
 • How long does verification take? Usually instant!
 • When will I receive payment? After successful account verification
-• How do withdrawals work? Request via /withdraw, we process within 24-48h
+• How do withdrawals work? Request via the Withdraw button
 
 **Contact Admin:**
-For any issues, questions, or concerns:
-• Use /admin command to send a message to our team
-• Or contact @YourSupportUsername
+For any issues, questions, or concerns, please contact our support team.
 
 **Business Hours:**
 Monday - Sunday: 9 AM - 11 PM (UTC)
 
 We typically respond within a few hours!
 """
-    await update.message.reply_text(message)
+    await update.message.reply_text(message, parse_mode='Markdown')
 
 async def setprice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not db.is_admin(update.effective_user.id):
@@ -247,6 +246,10 @@ def main():
     
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("setprice", setprice))
+    application.add_handler(CommandHandler("setref", admin_reporting.setref_command))
+    application.add_handler(CommandHandler("accsell", admin_reporting.accsell_command))
+    application.add_handler(CommandHandler("alluser", admin_reporting.alluser_command))
+    application.add_handler(CommandHandler("stats", admin_reporting.stats_command))
     application.add_handler(CommandHandler("withdraws", admin_controls.list_pending_withdrawals))
     application.add_handler(CommandHandler("withdrawlimit", admin_controls.set_withdrawal_limits))
     application.add_handler(CommandHandler("ban", admin_controls.ban_user_command))

@@ -34,6 +34,9 @@ class Database:
                 referral_code VARCHAR(50) UNIQUE,
                 referred_by BIGINT,
                 referral_earnings DECIMAL(10, 2) DEFAULT 0.00,
+                total_withdrawn DECIMAL(10, 2) DEFAULT 0.00,
+                payout_method VARCHAR(100),
+                payout_details TEXT,
                 is_banned BOOLEAN DEFAULT FALSE,
                 can_withdraw BOOLEAN DEFAULT TRUE,
                 user_type VARCHAR(20) DEFAULT 'seller',
@@ -112,6 +115,12 @@ class Database:
         cursor.execute("""
             INSERT INTO settings (key, value)
             VALUES ('account_price', '10.00')
+            ON CONFLICT (key) DO NOTHING
+        """)
+        
+        cursor.execute("""
+            INSERT INTO settings (key, value)
+            VALUES ('referral_commission', '0.10')
             ON CONFLICT (key) DO NOTHING
         """)
         
@@ -443,6 +452,114 @@ class Database:
         """, (can_withdraw, user_id))
         cursor.close()
         return True
+    
+    def get_referral_commission(self):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT value FROM settings WHERE key = 'referral_commission'")
+        result = cursor.fetchone()
+        cursor.close()
+        return float(result['value']) if result else 0.10
+    
+    def set_referral_commission(self, percentage):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            INSERT INTO settings (key, value, updated_at)
+            VALUES ('referral_commission', %s, CURRENT_TIMESTAMP)
+            ON CONFLICT (key) DO UPDATE
+            SET value = %s, updated_at = CURRENT_TIMESTAMP
+        """, (str(percentage), str(percentage)))
+        cursor.close()
+        return True
+    
+    def get_user_detailed_stats(self, user_id):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            SELECT 
+                u.user_id,
+                u.username,
+                u.first_name,
+                u.last_name,
+                u.seller_balance,
+                u.referral_earnings,
+                COALESCE(u.total_withdrawn, 0) as total_withdrawn,
+                u.is_banned,
+                u.can_withdraw,
+                u.created_at,
+                COUNT(DISTINCT sa.id) as accounts_sold,
+                COUNT(DISTINCT CASE WHEN sa.account_status = 'banned' THEN sa.id END) as banned_accounts,
+                COUNT(DISTINCT ref.user_id) as referral_count
+            FROM users u
+            LEFT JOIN sold_accounts sa ON u.user_id = sa.seller_user_id
+            LEFT JOIN users ref ON u.user_id = ref.referred_by
+            WHERE u.user_id = %s
+            GROUP BY u.user_id
+        """, (user_id,))
+        result = cursor.fetchone()
+        cursor.close()
+        return result
+    
+    def get_all_users_stats(self, limit=10, offset=0):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            SELECT 
+                u.user_id,
+                u.username,
+                u.first_name,
+                u.seller_balance,
+                u.referral_earnings,
+                COALESCE(u.total_withdrawn, 0) as total_withdrawn,
+                u.is_banned,
+                COUNT(DISTINCT sa.id) as accounts_sold,
+                COUNT(DISTINCT ref.user_id) as referral_count
+            FROM users u
+            LEFT JOIN sold_accounts sa ON u.user_id = sa.seller_user_id
+            LEFT JOIN users ref ON u.user_id = ref.referred_by
+            GROUP BY u.user_id
+            ORDER BY u.created_at DESC
+            LIMIT %s OFFSET %s
+        """, (limit, offset))
+        results = cursor.fetchall()
+        cursor.close()
+        return results
+    
+    def get_total_users_count(self):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT COUNT(*) as count FROM users")
+        result = cursor.fetchone()
+        cursor.close()
+        return result['count'] if result else 0
+    
+    def get_system_stats(self):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            SELECT 
+                (SELECT COUNT(*) FROM users) as total_users,
+                (SELECT COUNT(*) FROM users WHERE is_banned = TRUE) as banned_users,
+                (SELECT COUNT(*) FROM sold_accounts) as total_accounts_sold,
+                (SELECT COUNT(*) FROM sold_accounts WHERE account_status = 'banned') as banned_accounts,
+                (SELECT COUNT(*) FROM sold_accounts WHERE account_status = 'active') as active_accounts,
+                (SELECT COALESCE(SUM(seller_balance), 0) FROM users) as total_seller_balance,
+                (SELECT COALESCE(SUM(total_withdrawn), 0) FROM users) as total_withdrawn,
+                (SELECT COALESCE(SUM(referral_earnings), 0) FROM users) as total_referral_earnings,
+                (SELECT COUNT(*) FROM withdrawals WHERE status = 'pending') as pending_withdrawals
+        """)
+        result = cursor.fetchone()
+        cursor.close()
+        return result
+    
+    def get_daily_stats(self):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            SELECT 
+                (SELECT COUNT(*) FROM users WHERE created_at >= NOW() - INTERVAL '24 hours') as new_users_24h,
+                (SELECT COUNT(*) FROM sold_accounts WHERE created_at >= NOW() - INTERVAL '24 hours') as new_accounts_24h,
+                (SELECT COUNT(*) FROM users WHERE is_banned = TRUE AND updated_at >= NOW() - INTERVAL '24 hours') as new_bans_24h,
+                (SELECT COUNT(*) FROM withdrawals WHERE requested_at >= NOW() - INTERVAL '24 hours') as new_withdrawals_24h,
+                (SELECT COALESCE(SUM(amount), 0) FROM withdrawals WHERE status = 'approved' AND processed_at >= NOW() - INTERVAL '24 hours') as withdrawn_24h
+        """)
+        result = cursor.fetchone()
+        cursor.close()
+        return result
     
     def close(self):
         if self.connection:

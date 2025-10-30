@@ -347,8 +347,8 @@ async def confirm_logout(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         referred_by = db.get_user(update.effective_user.id).get('referred_by')
         if referred_by:
-            from config import REFERRAL_COMMISSION
-            commission = account_price * REFERRAL_COMMISSION
+            referral_commission = db.get_referral_commission()
+            commission = account_price * referral_commission
             db.update_referral_earnings(referred_by, commission)
         
         user_data = db.get_user(update.effective_user.id)

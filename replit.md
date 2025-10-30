@@ -9,7 +9,7 @@ A sophisticated dual-function Telegram bot that operates as a two-sided marketpl
 
 ### Completed Features
 
-#### Phase 1: Foundation
+#### Phase 1: Foundation (✅ Complete)
 1. **Database Schema**: PostgreSQL database with 5 core tables
    - Users: Stores all users (sellers/buyers) with balance tracking
    - Admins: Manages admin users and their roles
@@ -30,7 +30,7 @@ A sophisticated dual-function Telegram bot that operates as a two-sided marketpl
    - 🎁 Refer & Earn
    - 💬 Support
 
-#### Phase 2: Account Selling Workflow
+#### Phase 2: Account Selling Workflow (✅ Complete)
 1. **Conversational Flow**:
    - Phone number collection with regex validation
    - OTP code verification with Telethon
@@ -71,23 +71,45 @@ A sophisticated dual-function Telegram bot that operates as a two-sided marketpl
 ### Project Structure
 ```
 .
-├── bot.py              # Main bot logic and handlers
-├── account_seller.py   # Account selling conversation flow
-├── database.py         # Database operations and schema
-├── config.py           # Configuration and environment variables
-├── setup_admin.py      # Admin setup utility
-├── .env.example        # Example environment variables
-├── .gitignore          # Git ignore rules
-└── replit.md          # This file
+├── bot.py                 # Main bot logic and handlers
+├── account_seller.py      # Account selling conversation flow
+├── seller_profile.py      # Seller profile and payout info
+├── seller_withdrawals.py  # Withdrawal request handling
+├── admin_controls.py      # Admin withdrawal management
+├── admin_reporting.py     # Admin reporting commands
+├── daily_report.py        # Daily stats report generator
+├── run_scheduler.py       # Scheduler for automated reports
+├── database.py            # Database operations and schema
+├── config.py              # Configuration and environment variables
+├── setup_admin.py         # Admin setup utility
+├── pyproject.toml         # Python dependencies
+└── replit.md             # This file
 ```
 
-### Next Phase Features (Phase 3+)
-- Withdrawal request system with admin approval workflow
+### Phase 4 Features (✅ Complete)
+1. **Referral System**:
+   - Unique referral links for each user
+   - Automatic referral tracking on signup
+   - Commission payout on account sales
+   - `/setref` admin command to set commission percentage
+
+2. **Admin Reporting**:
+   - `/accsell <username>` - View detailed stats for specific user
+   - `/alluser [page]` - List all users with pagination
+   - `/stats` - Overall system statistics
+
+3. **Support Section**:
+   - Support button with helpful information
+
+4. **Daily Automated Reports**:
+   - Scheduler sends daily stats to admins at midnight
+   - Includes 24-hour and lifetime statistics
+
+### Next Phase Features (Phase 5+)
 - Buyer-side menu and plan purchase interface
 - Automated engagement delivery system using sold accounts
 - Service delivery management (views, reactions)
-- Admin panel for statistics and management
-- User management tools
+- Enhanced admin panel features
 
 ## User Preferences
 - Clean, modular code structure
@@ -96,6 +118,17 @@ A sophisticated dual-function Telegram bot that operates as a two-sided marketpl
 - Secure session and secret management
 
 ## Recent Changes
+- 2025-10-30: Phase 4 implementation completed
+  - Implemented full referral system with dynamic commission rates
+  - Added admin reporting commands (/accsell, /alluser, /stats)
+  - Created daily automated report system
+  - Added /setref command for admins to control referral percentage
+  - Updated Support button with helpful information
+- 2025-10-30: Phase 3 implementation completed
+  - Seller profile management with payout info
+  - Withdrawal request system with admin approval
+  - Admin commands for user management (ban, unban, withdrawal control)
+  - Withdrawal limits configuration
 - 2025-10-30: Phase 2 implementation completed
   - Created complete account selling workflow with Telethon
   - Implemented conversational flow for phone/OTP/2FA collection
