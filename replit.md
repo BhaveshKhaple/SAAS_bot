@@ -1,18 +1,21 @@
-# Telegram Marketplace Bot - Phase 1
+# Telegram Marketplace Bot - Phase 2 Complete
 
 ## Project Overview
 A sophisticated dual-function Telegram bot that operates as a two-sided marketplace:
-- **Seller Side**: Automated purchasing of Telegram accounts from users
-- **Buyer Side**: SaaS platform for delivering automated views and reactions to channel posts
+- **Seller Side**: Automated purchasing of Telegram accounts from users (✅ Phase 2 Complete)
+- **Buyer Side**: SaaS platform for delivering automated views and reactions to channel posts (Future)
 
-## Current Implementation (Phase 1)
+## Current Implementation (Phase 1 & 2)
 
 ### Completed Features
-1. **Database Schema**: PostgreSQL database with 4 core tables
+
+#### Phase 1: Foundation
+1. **Database Schema**: PostgreSQL database with 5 core tables
    - Users: Stores all users (sellers/buyers) with balance tracking
    - Admins: Manages admin users and their roles
    - Sold_Accounts: Stores session strings and account status
    - Withdrawals: Tracks seller payout requests
+   - Settings: Stores system configuration (account prices, etc.)
 
 2. **Bot Framework**: 
    - python-telegram-bot for command handling
@@ -26,6 +29,30 @@ A sophisticated dual-function Telegram bot that operates as a two-sided marketpl
    - 👤 Profile
    - 🎁 Refer & Earn
    - 💬 Support
+
+#### Phase 2: Account Selling Workflow
+1. **Conversational Flow**:
+   - Phone number collection with regex validation
+   - OTP code verification with Telethon
+   - 2FA password support for protected accounts
+   - Comprehensive error handling and user feedback
+
+2. **Session Management**:
+   - Session string creation and secure storage
+   - Automatic termination of other active sessions
+   - 2FA password reset to default (5000)
+   - Session verification before payout
+
+3. **Payment Processing**:
+   - Instant payout to seller_balance
+   - Automatic referral commission distribution
+   - User confirmation before final payout
+   - Account status tracking (processing → active)
+
+4. **Admin Controls**:
+   - `/setprice` command to adjust account prices
+   - Dynamic pricing system stored in settings table
+   - Permission-based access control
 
 ### Technology Stack
 - **Language**: Python 3.11
@@ -45,19 +72,22 @@ A sophisticated dual-function Telegram bot that operates as a two-sided marketpl
 ```
 .
 ├── bot.py              # Main bot logic and handlers
+├── account_seller.py   # Account selling conversation flow
 ├── database.py         # Database operations and schema
 ├── config.py           # Configuration and environment variables
+├── setup_admin.py      # Admin setup utility
 ├── .env.example        # Example environment variables
 ├── .gitignore          # Git ignore rules
 └── replit.md          # This file
 ```
 
-### Next Phase Features (Phase 2)
-- Account submission flow with phone number collection
-- Withdrawal request system with admin approval
+### Next Phase Features (Phase 3+)
+- Withdrawal request system with admin approval workflow
 - Buyer-side menu and plan purchase interface
-- Automated engagement delivery system
-- Referral tracking and commission calculation
+- Automated engagement delivery system using sold accounts
+- Service delivery management (views, reactions)
+- Admin panel for statistics and management
+- User management tools
 
 ## User Preferences
 - Clean, modular code structure
@@ -66,8 +96,15 @@ A sophisticated dual-function Telegram bot that operates as a two-sided marketpl
 - Secure session and secret management
 
 ## Recent Changes
+- 2025-10-30: Phase 2 implementation completed
+  - Created complete account selling workflow with Telethon
+  - Implemented conversational flow for phone/OTP/2FA collection
+  - Added session management (terminate sessions, reset 2FA)
+  - Built payout system with referral commission distribution
+  - Added admin /setprice command for dynamic pricing
+  - Fixed error handling to prevent invalid state transitions
 - 2025-10-30: Initial Phase 1 implementation completed
-  - Created database schema with 4 core tables
+  - Created database schema with 5 core tables (including Settings)
   - Implemented bot framework with user registration
   - Added admin authentication mechanism
   - Built main seller menu with 5 buttons
