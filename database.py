@@ -10,12 +10,30 @@ class Database:
         
     def connect(self):
         try:
+            database_url = os.getenv('DATABASE_URL')
+            print(f"DATABASE_URL from env: {database_url}")
+            
+            if not database_url:
+                pgdatabase = os.getenv('PGDATABASE')
+                pghost = os.getenv('PGHOST')
+                pgport = os.getenv('PGPORT')
+                pguser = os.getenv('PGUSER')
+                pgpassword = os.getenv('PGPASSWORD')
+                
+                print(f"PG vars - DB: {pgdatabase}, Host: {pghost}, Port: {pgport}, User: {pguser}")
+                
+                if pghost and pgdatabase:
+                    database_url = f"postgresql://{pguser}:{pgpassword}@{pghost}:{pgport}/{pgdatabase}"
+                    print(f"Constructed DATABASE_URL: postgresql://{pguser}:***@{pghost}:{pgport}/{pgdatabase}")
+                else:
+                    raise Exception("DATABASE_URL not set and unable to construct from PG environment variables")
+            
             self.connection = psycopg2.connect(
-                os.getenv('DATABASE_URL'),
+                database_url,
                 cursor_factory=RealDictCursor
             )
             self.connection.autocommit = True
-            print("Database connected successfully")
+            print("Database connected successfully!")
         except Exception as e:
             print(f"Database connection error: {e}")
             raise
