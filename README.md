@@ -93,30 +93,78 @@ Edit these values in `config.py` or add them to your environment:
 3. Send `/start` to begin
 4. Test all menu options to see the interface
 
-## Next Steps (Phase 3+)
+## Phase 7 Features (✅ Complete - Automated Payment Integration)
+
+### Deposit System
+- **Multiple Payment Methods**:
+  - 💳 UPI Payment (Manual verification with UTR)
+  - 💰 Paytm (Integration ready)
+  - ₿ Crypto/CryptoMus (Integration ready)
+  - 🔶 Binance Pay (Integration ready)
+  
+- **UPI Flow**: Users send payment → Submit UTR → Admin verifies → Wallet credited automatically
+
+### Promo Code System
+- **Admin Management**:
+  - Create promo codes with custom amounts and limits
+  - Set expiration dates and usage limits
+  - Delete codes and view usage logs
+  - Command: `/promo` for management panel
+
+- **User Experience**:
+  - Apply promo codes from Deposit menu
+  - Instant wallet credit upon valid code
+  - One-time use per user
+  - Clear error messages for invalid codes
+
+### Automated Plan Activation
+- **Smart Activation**: After deposit verification, system automatically:
+  - Checks for pending orders
+  - Verifies wallet balance
+  - Activates orders and deducts payment
+  - Notifies user of activation
+  - Shows remaining orders if balance insufficient
+
+### Admin Commands
+- `/deposits` - View all pending deposit requests
+- `/verifydep <utr> <amount>` - Verify and approve UPI deposits
+- `/promo` - Manage promotional codes
+
+## Next Steps (Phase 8+)
 
 The following features are planned for future phases:
-- Withdrawal request processing system with admin approval
-- Buyer-side menu for purchasing engagement services
-- Automated engagement delivery using collected accounts
-- Service delivery management (views, reactions)
-- Admin panel for managing users, accounts, and withdrawals
-- Statistics dashboard for admins
-- User management tools
+- Automated engagement delivery engine
+- Service delivery automation (views, reactions)
+- Real-time delivery tracking and monitoring
+- Reseller approval workflow
+- Advanced analytics dashboard
 
 ## Project Structure
 
 ```
 .
-├── bot.py              # Main bot logic and menu handlers
-├── account_seller.py   # Account selling conversation flow
-├── database.py         # Database operations and schema
-├── config.py           # Configuration and environment setup
-├── setup_admin.py      # Admin setup utility script
-├── .env.example        # Environment variable template
-├── .gitignore          # Git ignore rules
-├── README.md           # This file
-└── replit.md          # Project documentation
+├── bot.py                          # Main bot logic and handlers
+├── account_seller.py               # Account selling conversation flow
+├── seller_profile.py               # Seller profile management
+├── seller_withdrawals.py           # Withdrawal request handling
+├── buyer_menu.py                   # Buyer interface and SaaS features
+├── buy_plan.py                     # Plan purchase system (Phase 6)
+├── deposit_menu.py                 # Deposit system (Phase 7)
+├── promo_code_management.py        # Promo code admin panel (Phase 7)
+├── admin_deposit_management.py     # Deposit verification (Phase 7)
+├── admin_controls.py               # Admin withdrawal management
+├── admin_reporting.py              # Admin reporting commands
+├── admin_rate_management.py        # SaaS rate configuration
+├── account_pool_manager.py         # Account pool management
+├── account_status_checker.py       # Automated account verification
+├── account_monitor_scheduler.py    # Account monitoring scheduler
+├── daily_report.py                 # Daily stats report generator
+├── database.py                     # Database operations and schema
+├── config.py                       # Configuration and environment
+├── setup_admin.py                  # Admin setup utility
+├── pyproject.toml                  # Python dependencies
+├── README.md                       # This file
+└── replit.md                       # Complete project documentation
 ```
 
 ## Database Schema Overview

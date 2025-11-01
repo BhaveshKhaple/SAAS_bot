@@ -221,6 +221,37 @@ class Database:
         """)
         
         cursor.execute("""
+            CREATE TABLE IF NOT EXISTS deposits (
+                id SERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL,
+                amount DECIMAL(10, 2) NOT NULL,
+                payment_method VARCHAR(50) NOT NULL,
+                transaction_id VARCHAR(255),
+                status VARCHAR(20) DEFAULT 'pending',
+                admin_notes TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                verified_at TIMESTAMP,
+                verified_by BIGINT,
+                FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                FOREIGN KEY (verified_by) REFERENCES admins(user_id) ON DELETE SET NULL
+            )
+        """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS promo_code_usage (
+                id SERIAL PRIMARY KEY,
+                user_id BIGINT NOT NULL,
+                promo_code_id INTEGER NOT NULL,
+                code VARCHAR(50) NOT NULL,
+                bonus_amount DECIMAL(10, 2) NOT NULL,
+                used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                FOREIGN KEY (promo_code_id) REFERENCES promo_codes(id) ON DELETE CASCADE,
+                UNIQUE(user_id, promo_code_id)
+            )
+        """)
+        
+        cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_saas_orders_user ON saas_orders(user_id)
         """)
         
@@ -818,6 +849,185 @@ class Database:
         result = cursor.fetchone()
         cursor.close()
         return result
+    
+    def create_deposit_request(self, user_id, amount, payment_method, transaction_id, status='pending'):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            INSERT INTO deposits (user_id, amount, payment_method, transaction_id, status)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id
+        """, (user_id, amount, payment_method, transaction_id, status))
+        result = cursor.fetchone()
+        cursor.close()
+        return result['id'] if result else None
+    
+    def get_all_admins(self):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT * FROM admins WHERE is_active = TRUE")
+        results = cursor.fetchall()
+        cursor.close()
+        return results
+    
+    def apply_promo_code(self, user_id, code):
+        cursor = self.connection.cursor()
+        from datetime import datetime
+        
+        cursor.execute("""
+            SELECT * FROM promo_codes
+            WHERE UPPER(code) = UPPER(%s) AND is_active = TRUE
+        """, (code,))
+        promo = cursor.fetchone()
+        
+        if not promo:
+            cursor.close()
+            return {'success': False, 'error': 'Invalid or inactive promo code.'}
+        
+        if promo.get('expires_at') and promo['expires_at'] < datetime.now():
+            cursor.close()
+            return {'success': False, 'error': 'This promo code has expired.'}
+        
+        cursor.execute("""
+            SELECT * FROM promo_code_usage
+            WHERE user_id = %s AND promo_code_id = %s
+        """, (user_id, promo['id']))
+        already_used = cursor.fetchone()
+        
+        if already_used:
+            cursor.close()
+            return {'success': False, 'error': 'You have already used this promo code.'}
+        
+        if promo.get('usage_limit', 0) > 0 and promo.get('times_used', 0) >= promo['usage_limit']:
+            cursor.close()
+            return {'success': False, 'error': 'This promo code has reached its usage limit.'}
+        
+        bonus_amount = float(promo['discount_value'])
+        
+        cursor.execute("""
+            UPDATE users
+            SET buyer_wallet_balance = buyer_wallet_balance + %s, updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = %s
+            RETURNING buyer_wallet_balance
+        """, (bonus_amount, user_id))
+        result = cursor.fetchone()
+        new_balance = float(result['buyer_wallet_balance']) if result else 0.00
+        
+        cursor.execute("""
+            INSERT INTO promo_code_usage (user_id, promo_code_id, code, bonus_amount)
+            VALUES (%s, %s, %s, %s)
+        """, (user_id, promo['id'], code, bonus_amount))
+        
+        cursor.execute("""
+            UPDATE promo_codes
+            SET times_used = times_used + 1
+            WHERE id = %s
+        """, (promo['id'],))
+        
+        cursor.close()
+        return {
+            'success': True,
+            'bonus_amount': bonus_amount,
+            'new_balance': new_balance
+        }
+    
+    def create_promo_code(self, code, discount_type, discount_value, usage_limit=0, expires_at=None):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            INSERT INTO promo_codes (code, discount_type, discount_value, usage_limit, expires_at)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id
+        """, (code, discount_type, discount_value, usage_limit, expires_at))
+        result = cursor.fetchone()
+        cursor.close()
+        return result['id'] if result else None
+    
+    def delete_promo_code(self, code):
+        cursor = self.connection.cursor()
+        cursor.execute("DELETE FROM promo_codes WHERE UPPER(code) = UPPER(%s)", (code,))
+        cursor.close()
+        return True
+    
+    def get_all_promo_codes(self):
+        cursor = self.connection.cursor()
+        cursor.execute("SELECT * FROM promo_codes ORDER BY created_at DESC")
+        results = cursor.fetchall()
+        cursor.close()
+        return results
+    
+    def get_promo_code_usage_logs(self, code=None):
+        cursor = self.connection.cursor()
+        if code:
+            cursor.execute("""
+                SELECT pcu.*, u.username
+                FROM promo_code_usage pcu
+                JOIN users u ON pcu.user_id = u.user_id
+                WHERE UPPER(pcu.code) = UPPER(%s)
+                ORDER BY pcu.used_at DESC
+            """, (code,))
+        else:
+            cursor.execute("""
+                SELECT pcu.*, u.username
+                FROM promo_code_usage pcu
+                JOIN users u ON pcu.user_id = u.user_id
+                ORDER BY pcu.used_at DESC
+            """)
+        results = cursor.fetchall()
+        cursor.close()
+        return results
+    
+    def get_pending_deposits(self):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            SELECT d.*, u.username
+            FROM deposits d
+            JOIN users u ON d.user_id = u.user_id
+            WHERE d.status = 'pending' OR d.status = 'pending_verification'
+            ORDER BY d.created_at ASC
+        """)
+        results = cursor.fetchall()
+        cursor.close()
+        return results
+    
+    def verify_deposit(self, transaction_id, amount, admin_id):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            UPDATE deposits
+            SET amount = %s, status = 'verified', verified_at = CURRENT_TIMESTAMP, verified_by = %s
+            WHERE transaction_id = %s
+            RETURNING user_id
+        """, (amount, admin_id, transaction_id))
+        result = cursor.fetchone()
+        
+        if result:
+            user_id = result['user_id']
+            cursor.execute("""
+                UPDATE users
+                SET buyer_wallet_balance = buyer_wallet_balance + %s, updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = %s
+            """, (amount, user_id))
+        
+        cursor.close()
+        return result['user_id'] if result else None
+    
+    def update_order_status(self, order_id, status):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            UPDATE saas_orders
+            SET status = %s
+            WHERE id = %s
+        """, (status, order_id))
+        cursor.close()
+        return True
+    
+    def get_pending_orders_for_user(self, user_id):
+        cursor = self.connection.cursor()
+        cursor.execute("""
+            SELECT * FROM saas_orders
+            WHERE user_id = %s AND status = 'pending_payment'
+            ORDER BY created_at DESC
+        """, (user_id,))
+        results = cursor.fetchall()
+        cursor.close()
+        return results
     
     def close(self):
         if self.connection:

@@ -458,6 +458,202 @@
 
 ---
 
+## Phase 7 Testing: Automated Payment Integration
+
+### Test 7.1: Access Deposit Menu
+1. From Buyer menu, click **💰 Deposit**
+2. ✅ **Expected**: Display showing:
+   - Current wallet balance
+   - 5 payment methods (UPI, Paytm, Crypto, Binance, Promo Code)
+   - Back button
+
+### Test 7.2: UPI Deposit - Complete Flow
+**Requires admin access for verification**
+1. Click **💳 UPI Payment**
+2. ✅ **Expected**: Shows UPI ID and instructions
+3. Make a test UPI payment and get UTR number
+4. Send UTR number (12-digit format)
+5. ✅ **Expected**: 
+   - Confirmation message shown to user
+   - Admin receives notification with UTR
+6. **As Admin**: Run `/deposits` command
+7. ✅ **Expected**: See pending deposit in list
+8. **As Admin**: Run `/verifydep <utr> <amount>`
+9. ✅ **Expected**:
+   - Deposit verified
+   - User wallet credited
+   - User receives confirmation notification
+   - If user has pending orders, they activate automatically
+
+### Test 7.3: UPI Deposit - Invalid UTR
+1. Start UPI deposit flow
+2. Send invalid UTR (wrong length or format)
+3. ✅ **Expected**: Error message, asks for correct format
+
+### Test 7.4: Payment Method Placeholders
+1. Try **💰 Paytm**
+2. ✅ **Expected**: "Coming Soon" message
+3. Try **₿ Crypto (CryptoMus)**
+4. ✅ **Expected**: "Coming Soon" message  
+5. Try **🔶 Binance**
+6. ✅ **Expected**: "Coming Soon" message
+
+### Test 7.5: Apply Promo Code - Success
+**Requires admin to create code first**
+1. **As Admin**: Run `/promo`
+2. Click **➕ Create Promo Code**
+3. Send: `TEST10 10.00 100 30`
+4. ✅ **Expected**: Promo code created successfully
+5. **As User**: Go to Deposit menu
+6. Click **🎁 Apply Promo Code**
+7. Enter code: `TEST10`
+8. ✅ **Expected**:
+   - Success message
+   - Wallet credited with $10.00
+   - New balance displayed
+
+### Test 7.6: Apply Promo Code - Already Used
+1. Apply same code again (TEST10)
+2. ✅ **Expected**: Error "You have already used this promo code"
+
+### Test 7.7: Apply Promo Code - Invalid Code
+1. Click Apply Promo Code
+2. Enter non-existent code: `INVALID99`
+3. ✅ **Expected**: Error "Invalid or inactive promo code"
+
+### Test 7.8: Promo Code Management - Create
+**Admin only**
+1. Run `/promo`
+2. Click **➕ Create Promo Code**
+3. Send valid format: `WELCOME20 20.00 50 7`
+4. ✅ **Expected**:
+   - Code created
+   - Shows details: amount, limit, expiry
+
+### Test 7.9: Promo Code Management - Delete
+**Admin only**
+1. From `/promo` menu, click **❌ Delete Promo Code**
+2. Send code name: `TEST10`
+3. ✅ **Expected**: Code deleted successfully
+
+### Test 7.10: Promo Code Management - View All
+**Admin only**
+1. Create several promo codes
+2. Run `/promo` → **📊 View All Codes**
+3. ✅ **Expected**: List showing:
+   - All active codes
+   - Usage statistics (used/limit)
+   - Expiration dates
+   - Status (active/inactive)
+
+### Test 7.11: Promo Code Management - Usage Logs
+**Admin only**
+1. After users apply codes
+2. Run `/promo` → **📜 Usage Logs**
+3. ✅ **Expected**: List showing:
+   - Username who used code
+   - Code name
+   - Bonus amount
+   - Timestamp
+
+### Test 7.12: Automated Plan Activation - Sufficient Balance
+1. **As User**: Create an order (via Buy Plan)
+2. Order status: pending_payment
+3. Deposit funds (amount ≥ order price)
+4. **As Admin**: Verify deposit
+5. ✅ **Expected**:
+   - Order status → active
+   - Payment deducted from wallet
+   - User notified of activation
+   - New balance shown
+
+### Test 7.13: Automated Plan Activation - Insufficient Balance
+1. Create order with price $50
+2. Deposit only $30
+3. ✅ **Expected**:
+   - Wallet credited with $30
+   - Order remains pending
+   - User notified to add more funds
+
+### Test 7.14: Automated Plan Activation - Multiple Orders
+1. Create 3 orders: $10, $20, $30 (total $60)
+2. Deposit $35
+3. ✅ **Expected**:
+   - First two orders activated ($10 + $20)
+   - Third order remains pending
+   - Balance: $5 remaining
+   - User notified about partial activation
+
+### Test 7.15: Admin Deposits Command
+**Admin only**
+1. Have users submit several UPI deposits
+2. Run `/deposits`
+3. ✅ **Expected**: List showing:
+   - User ID and username
+   - Payment method
+   - UTR/Transaction ID
+   - Status
+   - Request timestamp
+   - Instructions to verify
+
+### Test 7.16: Deposit Verification - Admin Flow
+**Admin only**
+1. Run `/deposits` to see pending requests
+2. Verify with: `/verifydep 123456789012 50.00`
+3. ✅ **Expected**:
+   - Success confirmation to admin
+   - Shows user details
+   - New user balance
+   - User receives notification
+
+### Test 7.17: Promo Code Expiration
+**Admin only**
+1. Create code expiring in 1 day: `EXP5 5.00 10 1`
+2. Wait 2 days (or manipulate date in database)
+3. Try to apply code
+4. ✅ **Expected**: Error "This promo code has expired"
+
+### Test 7.18: Promo Code Usage Limit
+**Admin only**
+1. Create code with limit 2: `LIMITED 5.00 2 30`
+2. Have 2 users apply it successfully
+3. Have 3rd user try to apply
+4. ✅ **Expected**: Error "reached its usage limit"
+
+### Test 7.19: Cancel Deposit Flow
+1. Start any deposit flow (UPI or Promo)
+2. Send `/cancel`
+3. ✅ **Expected**:
+   - Process cancelled
+   - Can start new deposit
+
+### Test 7.20: Database Verification - Deposits Table
+**Requires database access**
+1. After creating deposits
+2. Query:
+   ```sql
+   SELECT * FROM deposits WHERE user_id = YOUR_USER_ID;
+   ```
+3. ✅ **Expected**:
+   - Deposit record exists
+   - Correct status
+   - Transaction ID stored
+   - Timestamps accurate
+
+### Test 7.21: Database Verification - Promo Code Usage
+**Requires database access**
+1. After applying promo code
+2. Query:
+   ```sql
+   SELECT * FROM promo_code_usage WHERE user_id = YOUR_USER_ID;
+   ```
+3. ✅ **Expected**:
+   - Usage record exists
+   - Correct bonus amount
+   - Cannot apply same code again (UNIQUE constraint)
+
+---
+
 ## Common Issues & Troubleshooting
 
 ### Issue 1: "Not receiving verification code"
@@ -577,6 +773,23 @@ SELECT * FROM saas_rates;
 - [x] Order creation with pending_payment status
 - [x] Cancel functionality works
 - [x] Orders stored in database correctly
+
+### Phase 7 ✅
+- [x] Deposit menu accessible with 5 options
+- [x] UPI payment flow works (UTR submission)
+- [x] Admin deposit verification works (/verifydep)
+- [x] Admin can view pending deposits (/deposits)
+- [x] Wallet credited after verification
+- [x] Promo code application works
+- [x] Promo code validation (one-time use, expiry, limits)
+- [x] Admin promo management panel (/promo)
+- [x] Create promo codes with custom settings
+- [x] Delete promo codes
+- [x] View all promo codes and usage logs
+- [x] Automated plan activation after deposit
+- [x] Multiple order activation with balance check
+- [x] User notifications for all actions
+- [x] Deposits and promo_code_usage tables working
 
 ---
 

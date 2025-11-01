@@ -62,27 +62,8 @@ async def buy_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await show_plan_types(update, context)
 
 async def deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message = """
-💰 **Deposit Funds**
-
-Add money to your buyer wallet to purchase engagement plans.
-
-**Payment Methods:**
-• Cryptocurrency (USDT, BTC, ETH)
-• PayPal
-• Bank Transfer
-• Other methods available
-
-**How to deposit:**
-1. Contact admin with your deposit amount
-2. You'll receive payment instructions
-3. Send payment and provide transaction ID
-4. Funds added to your wallet within 1-24 hours
-
-💬 Contact support to initiate a deposit.
-"""
-    
-    await update.message.reply_text(message, parse_mode='Markdown')
+    from deposit_menu import show_deposit_methods
+    await show_deposit_methods(update, context)
 
 async def my_plans(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user

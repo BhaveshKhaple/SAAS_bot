@@ -22,6 +22,9 @@ import buyer_menu
 import account_pool_manager
 import admin_rate_management
 import buy_plan
+import deposit_menu
+import promo_code_management
+import admin_deposit_management
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -282,6 +285,8 @@ def main():
     
     application.add_handler(buy_plan.get_buy_plan_handler())
     application.add_handler(admin_rate_management.get_rate_management_handler())
+    application.add_handler(deposit_menu.get_deposit_handler())
+    application.add_handler(promo_code_management.get_promo_management_handler())
     
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("setprice", setprice))
@@ -297,6 +302,9 @@ def main():
     application.add_handler(CommandHandler("unban", admin_controls.unban_user_command))
     application.add_handler(CommandHandler("stopwithdraw", admin_controls.stop_withdraw_command))
     application.add_handler(CommandHandler("allowwithdraw", admin_controls.allow_withdraw_command))
+    application.add_handler(CommandHandler("verifydep", admin_deposit_management.verify_deposit_command))
+    application.add_handler(CommandHandler("deposits", admin_deposit_management.view_pending_deposits))
+    application.add_handler(CommandHandler("promo", promo_code_management.show_promo_management))
     
     application.add_handler(CallbackQueryHandler(admin_controls.view_withdrawal_detail, pattern="^withdrawal_view_"))
     application.add_handler(CallbackQueryHandler(admin_controls.approve_withdrawal, pattern="^withdrawal_approve_"))
