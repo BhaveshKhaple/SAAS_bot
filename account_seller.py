@@ -80,8 +80,8 @@ async def receive_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return PHONE
     
     context.user_data['phone'] = phone
-    context.user_data['client'] = None
     
+    client = None
     try:
         client = TelegramClient(
             StringSession(),
@@ -92,13 +92,24 @@ async def receive_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await client.connect()
         
         result = await client.send_code_request(phone)
+        
+        session_string = client.session.save()
+        context.user_data['session_string'] = session_string
         context.user_data['phone_code_hash'] = result.phone_code_hash
-        context.user_data['client'] = client
+        
+        logger.info(f"Code request sent successfully for {phone}, session saved")
         
         await update.message.reply_text(
-            f"✅ Verification code sent to **{phone}**\n\n"
-            "📨 Please enter the code you received (e.g., 12345)\n\n"
-            "Or /cancel to stop.",
+            f"✅ **Verification Code Sent!**\n\n"
+            f"📱 **Important:** Check your Telegram app!\n"
+            f"The code should appear in a chat from \"Telegram\" (official)\n\n"
+            f"📞 Phone: {phone}\n\n"
+            f"⏰ If you don't see it within 2 minutes:\n"
+            f"   • Check the \"Telegram\" chat in your app\n"
+            f"   • Check your SMS messages\n"
+            f"   • Make sure {phone} is correct\n\n"
+            f"📨 Enter the 5-digit code below:\n\n"
+            f"Or /cancel to stop.",
             parse_mode='Markdown'
         )
         return CODE
@@ -110,12 +121,16 @@ async def receive_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return PHONE
     except Exception as e:
-        logger.error(f"Error sending code: {e}")
+        logger.error(f"Error sending code to {phone}: {e}")
         await update.message.reply_text(
-            "❌ An error occurred. Please try again later or contact support.\n"
+            "❌ An error occurred while sending the verification code.\n\n"
+            "Please try again later or contact support.\n"
             "/cancel to stop."
         )
         return ConversationHandler.END
+    finally:
+        if client and client.is_connected():
+            await client.disconnect()
 
 async def receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
     code = update.message.text.strip().replace('-', '').replace(' ', '')
@@ -127,20 +142,33 @@ async def receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return CODE
     
-    client = context.user_data.get('client')
+    session_string = context.user_data.get('session_string')
     phone = context.user_data.get('phone')
+    phone_code_hash = context.user_data.get('phone_code_hash')
     
-    if not client or not phone:
+    if not session_string or not phone or not phone_code_hash:
         await update.message.reply_text(
-            "❌ Session expired. Please start over with /sell"
+            "❌ Session expired. Please start over with /sell or the Sell button."
         )
         return ConversationHandler.END
     
+    client = None
     try:
-        await client.sign_in(phone, code)
+        client = TelegramClient(
+            StringSession(session_string),
+            TELEGRAM_API_ID,
+            TELEGRAM_API_HASH
+        )
         
-        session_string = client.session.save()
-        context.user_data['session_string'] = session_string
+        await client.connect()
+        
+        await client.sign_in(phone=phone, code=code, phone_code_hash=phone_code_hash)
+        
+        final_session_string = client.session.save()
+        context.user_data['session_string'] = final_session_string
+        context.user_data['client'] = client
+        
+        logger.info(f"User signed in successfully with phone {phone}")
         
         await update.message.reply_text(
             "✅ Code verified successfully!\n\n"
@@ -151,6 +179,7 @@ async def receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return result
         
     except SessionPasswordNeededError:
+        context.user_data['client'] = client
         await update.message.reply_text(
             "🔐 **2FA Enabled**\n\n"
             "Your account has Two-Factor Authentication enabled.\n"
@@ -162,6 +191,8 @@ async def receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return PASSWORD
         
     except PhoneCodeInvalidError:
+        if client and client.is_connected():
+            await client.disconnect()
         await update.message.reply_text(
             "❌ Invalid verification code. Please try again.\n"
             "Or /cancel to stop."
@@ -169,7 +200,9 @@ async def receive_code(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return CODE
         
     except Exception as e:
-        logger.error(f"Error during sign in: {e}")
+        if client and client.is_connected():
+            await client.disconnect()
+        logger.error(f"Error during sign in with code: {e}")
         await update.message.reply_text(
             "❌ An error occurred during verification. Please try again.\n"
             "/cancel to stop."
@@ -387,8 +420,12 @@ Thank you for selling your account! 🙏
 
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     client = context.user_data.get('client')
-    if client and client.is_connected():
-        await client.disconnect()
+    if client:
+        try:
+            if client.is_connected():
+                await client.disconnect()
+        except:
+            pass
     
     context.user_data.clear()
     
