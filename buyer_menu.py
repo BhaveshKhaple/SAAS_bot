@@ -58,37 +58,8 @@ Choose an option below to get started:
     )
 
 async def buy_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    rates = db.get_saas_rates()
-    
-    message = """
-💎 **Buy Engagement Plan**
-
-We offer 4 types of engagement services:
-
-"""
-    
-    for rate in rates:
-        if rate['rate_type'] == 'per_view':
-            message += f"📊 **Per View:** ${rate['price_per_unit']:.4f}/view\n"
-        elif rate['rate_type'] == 'per_day_view':
-            message += f"📅 **Daily Views:** ${rate['price_per_unit']:.2f}/view/day\n"
-        elif rate['rate_type'] == 'per_reaction':
-            message += f"❤️ **Per Reaction:** ${rate['price_per_unit']:.4f}/reaction\n"
-        elif rate['rate_type'] == 'per_day_reaction':
-            message += f"📅 **Daily Reactions:** ${rate['price_per_unit']:.2f}/reaction/day\n"
-    
-    message += """
-
-**How it works:**
-1. Choose your plan type
-2. Specify your channel and requirements
-3. Pay from your buyer wallet
-4. We deliver engagement automatically!
-
-📝 To create a custom plan, please contact support or use the web dashboard (coming soon).
-"""
-    
-    await update.message.reply_text(message, parse_mode='Markdown')
+    from buy_plan import show_plan_types
+    await show_plan_types(update, context)
 
 async def deposit(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = """

@@ -20,6 +20,8 @@ import admin_controls
 import admin_reporting
 import buyer_menu
 import account_pool_manager
+import admin_rate_management
+import buy_plan
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -218,9 +220,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🔙 Back to User Menu":
         if db.is_admin(update.effective_user.id):
             await update.message.reply_text("Switching to user menu...", reply_markup=get_seller_menu())
+    elif text == "⚙️ Settings":
+        if db.is_admin(update.effective_user.id):
+            await admin_rate_management.show_rate_management(update, context)
+        else:
+            await update.message.reply_text("⛔ Admin access required")
     else:
         is_admin = db.is_admin(update.effective_user.id)
-        if is_admin and text in ["📊 Statistics", "👥 Users", "💳 Withdrawals", "📱 Accounts", "⚙️ Settings"]:
+        if is_admin and text in ["📊 Statistics", "👥 Users", "💳 Withdrawals", "📱 Accounts"]:
             await update.message.reply_text(f"Admin feature '{text}' - Coming soon in future phases!")
         elif text not in ["💰 Sell TG Account", "💸 Withdraw", "💳 Set Payout Info"]:
             await update.message.reply_text("Please use the menu buttons below to navigate.")
@@ -273,6 +280,9 @@ def main():
     
     application.add_handler(add_account_handler)
     
+    application.add_handler(buy_plan.get_buy_plan_handler())
+    application.add_handler(admin_rate_management.get_rate_management_handler())
+    
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("setprice", setprice))
     application.add_handler(CommandHandler("setref", admin_reporting.setref_command))
@@ -292,6 +302,9 @@ def main():
     application.add_handler(CallbackQueryHandler(admin_controls.approve_withdrawal, pattern="^withdrawal_approve_"))
     application.add_handler(CallbackQueryHandler(admin_controls.reject_withdrawal, pattern="^withdrawal_reject_"))
     application.add_handler(CallbackQueryHandler(admin_controls.back_to_withdrawal_list, pattern="^withdrawal_back$"))
+    
+    application.add_handler(CallbackQueryHandler(admin_rate_management.show_rate_management, pattern="^show_rates$"))
+    application.add_handler(CallbackQueryHandler(buy_plan.show_plan_types, pattern="^buyer_back$"))
     
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
