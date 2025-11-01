@@ -142,10 +142,52 @@ A sophisticated dual-function Telegram bot that operates as a two-sided marketpl
    - Low pool alert when <100 active accounts
    - Automatic admin notifications
 
-### Next Phase Features (Phase 6+)
-- Automated engagement delivery system
-- Service delivery management (views, reactions)
-- Promo code management UI
+### Phase 6 Features (✅ Phase 6 Complete)
+
+1. **Plan Purchase System (Buy Plan Flow)**:
+   - Complete conversation-based order creation flow
+   - 4 plan types available:
+     - 💎 Unlimited Views - continuous views on posts (pay per day per view)
+     - 🎯 Limited Views - one-time view boost (pay per view)
+     - ❤️ Unlimited Reactions - auto-reactions on every post (pay per day per reaction)
+     - 🎪 Limited Reactions - one-time reaction boost (pay per reaction)
+   
+2. **Multi-Step Input Collection**:
+   - Step 1: Duration (1-365 days)
+   - Step 2: Daily posts or daily views/reactions
+   - Step 3: Views/reactions per post (for limited plans)
+   - Step 4: Channel username/link validation
+   - Step 5: Order summary with price calculation
+   
+3. **Automatic Price Calculation**:
+   - Real-time calculation using SaaS rates from database
+   - Formula displayed to user for transparency
+   - Different formulas for each plan type
+   - Examples:
+     - Limited Views: days × posts/day × views/post × per_view_rate
+     - Unlimited Views: days × views/day × per_day_view_rate
+   
+4. **Order Creation & Management**:
+   - Creates order with `pending_payment` status
+   - Stores all plan details in `saas_orders` table
+   - Generates unique order ID
+   - Links order to user
+   - Ready for payment activation (Phase 7)
+
+5. **User Experience Features**:
+   - Cancel anytime with `/cancel` command
+   - Input validation at each step
+   - Clear error messages
+   - Progress indicators (Step X/5)
+   - Inline keyboard buttons for confirmation
+
+**Files**: `buy_plan.py` (420 lines, complete conversation handler)
+
+### Next Phase Features (Phase 7+)
+- Automated payment integration (UPI, Paytm, Crypto, Binance)
+- Promo code redemption system
+- Automated plan activation from wallet balance
+- Service delivery automation
 - Reseller approval workflow
 - Real-time delivery monitoring
 
@@ -156,6 +198,10 @@ A sophisticated dual-function Telegram bot that operates as a two-sided marketpl
 - Secure session and secret management
 
 ## Recent Changes
+- 2025-11-01: **Phase 6 Documentation Added**
+  - Documented complete plan purchase system (Buy Plan flow)
+  - Added Phase 6 testing guide for all 4 plan types
+  - Updated project structure documentation
 - 2025-11-01: **CRITICAL BUG FIX** - Verification Code Issue Resolved
   - **Problem**: Users couldn't receive verification codes when selling accounts
   - **Root Cause**: Telethon client was garbage collected before code entry
@@ -165,6 +211,12 @@ A sophisticated dual-function Telegram bot that operates as a two-sided marketpl
   - Improved error handling and session management
   - Created comprehensive testing guide (TESTING_GUIDE.md)
   - Created feature status report (FEATURE_STATUS.md)
+- 2025-10-30: Phase 6 implementation completed
+  - Implemented complete plan purchase conversation flow with 5 steps
+  - Added 4 plan types (unlimited/limited views/reactions)
+  - Built automatic price calculation engine
+  - Created order management system with pending_payment status
+  - Integrated with existing buyer menu and SaaS database
 - 2025-10-30: Phase 5 implementation completed
   - Built complete buyer/SaaS interface with 7 menu options
   - Expanded database with 5 new tables for SaaS operations

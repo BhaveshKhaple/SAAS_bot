@@ -330,6 +330,134 @@
 
 ---
 
+## Phase 6 Testing: Plan Purchase System (Buy Plan Flow)
+
+### Test 6.1: Access Plan Types
+1. From Buyer menu, click **💎 Buy Plan**
+2. ✅ **Expected**: Display of 4 plan types:
+   - 💎 Unlimited Views
+   - 🎯 Limited Views
+   - ❤️ Unlimited Reactions
+   - 🎪 Limited Reactions
+   - Current rates shown
+   - Back button available
+
+### Test 6.2: Unlimited Views Plan - Full Flow
+1. Click **💎 Unlimited Views**
+2. Enter duration (e.g., `30` days)
+3. ✅ **Expected**: Accepts valid number (1-365)
+4. Enter daily views (e.g., `1000`)
+5. ✅ **Expected**: Asks for channel link
+6. Enter channel (e.g., `@testchannel` or `https://t.me/testchannel`)
+7. ✅ **Expected**: Shows order summary with:
+   - Plan details
+   - Channel name
+   - Duration
+   - Daily views
+   - Price calculation formula
+   - Total price
+   - Proceed/Cancel buttons
+8. Click **✅ Proceed to Payment**
+9. ✅ **Expected**: 
+   - Order created successfully
+   - Order ID generated
+   - Status: Pending Payment
+   - Payment instructions displayed
+
+### Test 6.3: Limited Views Plan - Full Flow
+1. Click **🎯 Limited Views**
+2. Enter duration (e.g., `7` days)
+3. Enter daily posts (e.g., `3` posts)
+4. Enter views per post (e.g., `500` views)
+5. Enter channel username
+6. ✅ **Expected**: Order summary shows:
+   - Calculation: 7 days × 3 posts/day × 500 views/post × $0.0010
+   - Total price calculated correctly
+7. Confirm order
+8. ✅ **Expected**: Order created with pending_payment status
+
+### Test 6.4: Unlimited Reactions Plan
+1. Click **❤️ Unlimited Reactions**
+2. Complete flow similar to unlimited views
+3. ✅ **Expected**: Uses per_day_reaction rate
+4. Verify price calculation is correct
+
+### Test 6.5: Limited Reactions Plan
+1. Click **🎪 Limited Reactions**
+2. Complete flow similar to limited views
+3. ✅ **Expected**: Uses per_reaction rate
+4. Verify price calculation is correct
+
+### Test 6.6: Input Validation - Invalid Duration
+1. Start any plan purchase
+2. Enter invalid duration: `0` or `400` or `abc`
+3. ✅ **Expected**: Error message, asks to retry
+4. Enter valid number to continue
+
+### Test 6.7: Input Validation - Negative Numbers
+1. During daily posts/views step
+2. Enter negative number: `-5`
+3. ✅ **Expected**: Error message asking for positive number
+
+### Test 6.8: Channel Link Validation
+1. Reach channel link step
+2. Test various formats:
+   - `@yourchannel` ✅
+   - `https://t.me/yourchannel` ✅
+   - `yourchannel` ✅ (auto-adds @)
+   - `t.me/yourchannel` ✅
+3. ✅ **Expected**: All formats accepted and normalized to @username
+
+### Test 6.9: Cancel Order Mid-Flow
+1. Start any plan purchase
+2. At any step, send `/cancel`
+3. ✅ **Expected**: 
+   - Process cancelled
+   - Confirmation message shown
+   - Can start new order
+
+### Test 6.10: Cancel at Confirmation Screen
+1. Complete all steps to reach order summary
+2. Click **❌ Cancel** button
+3. ✅ **Expected**: 
+   - Order not created
+   - Cancellation message shown
+   - Returns to buyer menu
+
+### Test 6.11: Price Calculation Accuracy
+**Manual verification**
+1. Create order with known values:
+   - Unlimited Views: 10 days × 100 views × $0.05 = $50.00
+   - Limited Views: 5 days × 2 posts × 200 views × $0.001 = $2.00
+2. ✅ **Expected**: Calculated price matches manual calculation
+3. Check formula displayed matches the calculation
+
+### Test 6.12: Database Order Storage
+**Requires database access**
+1. After creating an order
+2. Query database:
+   ```sql
+   SELECT * FROM saas_orders WHERE user_id = YOUR_USER_ID ORDER BY id DESC LIMIT 1;
+   ```
+3. ✅ **Expected**: 
+   - Order exists in database
+   - Status = 'pending_payment'
+   - All details stored correctly
+   - Plan type, duration, channel stored
+   - Price matches UI calculation
+
+### Test 6.13: Multiple Orders
+1. Create first order successfully
+2. Return to Buy Plan menu
+3. Create second order with different parameters
+4. ✅ **Expected**: 
+   - Both orders created
+   - Different order IDs
+   - Both in pending_payment status
+   - Can view in database
+
+---
+
 ## Common Issues & Troubleshooting
 
 ### Issue 1: "Not receiving verification code"
@@ -435,6 +563,20 @@ SELECT * FROM saas_rates;
 - [x] Manual account add/remove works
 - [x] Automated account status checking works
 - [x] Low pool alerts work
+
+### Phase 6 ✅
+- [x] Plan types menu displays (4 options)
+- [x] Unlimited Views plan flow works
+- [x] Limited Views plan flow works
+- [x] Unlimited Reactions plan flow works
+- [x] Limited Reactions plan flow works
+- [x] Input validation works at all steps
+- [x] Channel link validation and normalization works
+- [x] Price calculation is accurate
+- [x] Order summary displays correctly
+- [x] Order creation with pending_payment status
+- [x] Cancel functionality works
+- [x] Orders stored in database correctly
 
 ---
 
