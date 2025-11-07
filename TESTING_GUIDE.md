@@ -1131,3 +1131,52 @@ For issues or questions:
    - Profit (15% margin) added to reseller's profit
    - Reseller can withdraw commission
 
+
+## Support
+
+For additional testing support or to report issues, refer to the project documentation or contact the development team.
+
+---
+
+## Phase 10 Testing: Advanced Admin Tools & Analytics
+
+### Test 10.1: SaaS Admin Reporting
+**Prerequisites**: Must be logged in as admin
+
+1. **Access Reporting Dashboard**:
+   - Send `/saasreports` command
+   - ✅ **Expected**: Menu with 4 options (Payment Reports, Sales & Usage Stats, Export CSV, Back)
+
+2. **Test Payment Reports**:
+   - Click "💳 Payment Reports" → Select "All Payments"
+   - ✅ **Expected**: List of up to 50 verified payments
+   - Test "Revenue Summary"
+   - ✅ **Expected**: Today/Week/Month/Lifetime revenue breakdown
+
+3. **Test CSV Export**:
+   - Click "📁 Export CSV" → Select "Sales Report"
+   - ✅ **Expected**: CSV file download with timestamped filename
+
+### Test 10.2: Broadcast Messaging
+1. Send `/broadcast` command
+2. Select "All Users"
+3. Send test message
+4. ✅ **Expected**: Broadcast Complete with success/fail counts
+
+### Test 10.3: Admin Management (Root Admin Only)
+1. Send `/adminmgmt` command
+2. Click "➕ Add Admin", enter user ID
+3. ✅ **Expected**: Confirmation + new admin receives notification
+4. Click "📜 Admin Logs"
+5. ✅ **Expected**: Action logged with timestamp
+
+### Test 10.4: Enhanced Daily Reports
+1. Run: `python daily_report.py`
+2. ✅ **Expected**: Comprehensive report with 5 sections:
+   - SaaS Sales & Deposits (Today)
+   - Seller Accounts (Today)
+   - TG Account Pool Status
+   - Overall System Stats
+   - Pending Actions
+
+Refer to PHASE_10_GUIDE.md for detailed testing procedures.
