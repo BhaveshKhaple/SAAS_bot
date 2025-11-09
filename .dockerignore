@@ -1,0 +1,95 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+.pythonlibs/
+venv/
+ENV/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Replit specific
+.replit
+.config/
+.upm/
+.cache/
+replit.nix
+
+# Git
+.git/
+.gitignore
+
+# Documentation (already in image)
+*.md
+docs/
+
+# Logs (mounted as volume)
+logs/
+*.log
+
+# Environment files (use docker-compose env)
+.env
+.env.local
+
+# Test files
+test_*.py
+*_test.py
+tests/
+
+# Database backups
+backups/
+*.sql
+*.dump
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Session files (mounted as volume)
+sessions/
+*.session
+
+# Cache
+.cache/
+uv.lock
+
+# Attached assets
+attached_assets/
+
+# Local state
+.local/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Pytest
+.pytest_cache/
