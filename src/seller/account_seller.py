@@ -160,25 +160,29 @@ async def resend_code_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     await query.answer()
     
     phone = context.user_data.get('phone')
+    client = context.user_data.get('telethon_client')
+    
     if not phone:
         await query.edit_message_text("❌ Session expired. Please start over.")
         return ConversationHandler.END
     
-    await cleanup_client(context)
-    
     try:
-        api_id = int(TELEGRAM_API_ID)
-        api_hash = str(TELEGRAM_API_HASH)
-        
-        client = TelegramClient(StringSession(), api_id, api_hash)
-        await client.connect()
+        if not client or not client.is_connected():
+            api_id = int(TELEGRAM_API_ID)
+            api_hash = str(TELEGRAM_API_HASH)
+            
+            if client:
+                await cleanup_client(context)
+            
+            client = TelegramClient(StringSession(), api_id, api_hash)
+            await client.connect()
+            context.user_data['telethon_client'] = client
         
         result = await client.send_code_request(phone)
         
         session_string = client.session.save()
         context.user_data['session_string'] = session_string
         context.user_data['phone_code_hash'] = result.phone_code_hash
-        context.user_data['telethon_client'] = client
         
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton("🔄 Resend Code", callback_data="resend_code")],
@@ -313,7 +317,7 @@ async def process_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
     original_password = context.user_data.get('original_password')
     
     try:
-        await update.message.reply_text("🔄 Step 1/4: Terminating other sessions...")
+        await update.message.reply_text("🔄 Step 1/3: Terminating other sessions...")
         await asyncio.sleep(1)
         
         authorizations = await client.get_authorizations()
@@ -327,7 +331,7 @@ async def process_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("✅ Other sessions terminated")
         await asyncio.sleep(1)
         
-        await update.message.reply_text("🔄 Step 2/4: Resetting 2FA password...")
+        await update.message.reply_text("🔄 Step 2/3: Resetting 2FA password...")
         await asyncio.sleep(1)
         
         try:
@@ -352,19 +356,7 @@ async def process_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await asyncio.sleep(1)
         
-        await update.message.reply_text("🔄 Step 3/4: Logging out from all devices...")
-        await asyncio.sleep(1)
-        
-        try:
-            await client.log_out()
-            await update.message.reply_text("✅ Logged out successfully")
-        except Exception as e:
-            logger.warning(f"Logout warning: {e}")
-            await update.message.reply_text("⚠️ Logout may not be complete")
-        
-        await asyncio.sleep(1)
-        
-        await update.message.reply_text("🔄 Step 4/4: Saving account to database...")
+        await update.message.reply_text("🔄 Step 3/3: Saving account to database...")
         await asyncio.sleep(1)
         
         account_id = db.create_sold_account(
@@ -385,11 +377,13 @@ async def process_account(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         await update.message.reply_text(
             "📱 **Final Step - Confirmation**\n\n"
-            "✅ Your account has been logged out\n"
+            "✅ Other sessions terminated\n"
+            "✅ Password reset complete\n"
             "✅ Session saved to our system\n"
             "✅ Ready for payment\n\n"
-            "Please confirm to complete the sale and receive payment.\n\n"
-            "⚠️ **Note:** By confirming, you agree that we now control this account.",
+            "⚠️ **IMPORTANT:** You should now manually log out from your Telegram app on all devices before confirming.\n\n"
+            "Once you've logged out and are ready, click Confirm to complete the sale and receive payment.\n\n"
+            "**Note:** By confirming, you agree that we now have full control of this account.",
             reply_markup=keyboard,
             parse_mode='Markdown'
         )
