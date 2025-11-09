@@ -32,10 +32,18 @@ The bot requires these environment variables to run:
 5. **Add packages**: Use `packager_tool` with language="python" (updates pyproject.toml automatically)
 
 ### File Structure Rules
-- **bot.py**: Main entry point, registers all handlers
-- **database.py**: All database schema and operations (single source of truth)
-- **Feature modules**: Each feature in separate file (account_seller.py, buyer_menu.py, etc.)
+- **Organized Structure**: All code in `src/` directory with subdirectories:
+  - `src/bot/`: Main bot logic and core handlers
+  - `src/database/`: Database operations and config
+  - `src/admin/`: Admin features and management
+  - `src/seller/`: Seller workflow and profile
+  - `src/buyer/`: Buyer SaaS features and plans
+  - `src/utils/`: Shared utilities and helpers
+- **Main entry**: `main.py` imports from `src.bot.bot`
+- **Bug tracking**: All bugs MUST be logged in `fixtodo.md` before fixing
+- **Documentation**: Update README.md after major changes
 - **Never modify**: pyproject.toml manually (use packager_tool instead)
+- **Docker**: Keep Dockerfile and docker-compose.yml in sync with project structure
 
 ## Project Overview
 A sophisticated dual-function Telegram bot that operates as a two-sided marketplace:
