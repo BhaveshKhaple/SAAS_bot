@@ -1,0 +1,78 @@
+You are an expert AI coding assistant. Your task is to help me build a complex, dual-function Telegram bot.
+
+Project Context
+What We Are Building
+We are creating a sophisticated Telegram bot that operates as a two-sided marketplace.
+
+Seller Side: The bot will automatically purchase Telegram accounts from users ("Sellers"). Users will be guided through a flow to submit their phone number and login codes, and upon successful session capture, they will be paid to an in-bot balance.
+
+Buyer (SaaS) Side: The bot will use this acquired pool of accounts to run a Software-as-a-Service (SaaS) business. "Buyers" can purchase plans to receive automated views and reactions on their channel posts, which will be delivered by the accounts we collected.
+
+Target Audience
+"Sellers": Telegram users who want to earn money by selling their accounts to the system.
+
+"Buyers": Telegram channel owners and administrators who want to purchase engagement (views, reactions). This also includes "Resellers".
+
+"Admins": The operators (us) who will manage the system, set prices, approve withdrawals, and monitor the account pool.
+
+Primary Goal
+The purpose is to create a fully automated business. We will buy a resource (Telegram accounts) and use it to sell a service (engagement). The bot must automate account acquisition, seller payouts, buyer payments, and service delivery.
+
+Your Next Task: Phase 11 (Integration, Testing & Deployment)
+Your objective is to ensure all systems work together seamlessly, conduct thorough testing on all user and admin flows, and deploy the bot to a production server.
+
+Please complete the following four tasks:
+
+11.1. Integration Testing (The Full Loop)
+First, you must test the entire "money-for-service" loop from start to finish. This ensures the Seller and Buyer systems are correctly integrated.
+
+Execute this 10-step test:
+
+Admin sets account sell price (/setprice).
+
+User A sells an account.
+
+Admin sees the account in /accounts (pool).
+
+Admin sets SaaS rates.
+
+User B deposits money via UPI.
+
+User B buys a plan.
+
+Bot auto-activates the plan, deducting User B's balance.
+
+Backend worker uses User A's account to deliver views to User B's channel.
+
+User A withdraws their earnings.
+
+Admin approves User A's withdrawal.
+
+11.2. User Acceptance Testing (UAT)
+Next, conduct comprehensive UAT from all perspectives:
+
+
+Test All Flows: Test every button, command, and conversation flow for both a seller and a buyer.
+
+
+Test Admin Commands: Verify that all admin commands and reports are accurate and function as expected.
+
+
+Test Edge Cases: Test all failure scenarios, such as low balance, invalid inputs, accounts with 2FA, and private channel join requests.
+
+11.3. Production Deployment
+Once testing is complete, deploy the application to your production server:
+
+
+Deploy Scripts: Deploy the main bot script and all associated backend workers (e.g., the Delivery Worker and the Scheduled Reports worker).
+
+
+Secure Database: Ensure the production database is secure and that a backup strategy is in place.
+
+11.4. Process Monitoring
+Finally, ensure the bot remains online and functional after deployment:
+
+
+Set Up Monitoring: Implement a process monitoring tool (like systemd or pm2) to automatically restart the bot and its workers if they crash.
+
+Final Check: Monitor the live environment to ensure all processes are running stable.
