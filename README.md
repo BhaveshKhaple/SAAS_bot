@@ -147,13 +147,64 @@ Edit these values in `config.py` or add them to your environment:
 - `/verifydep <utr> <amount>` - Verify and approve UPI deposits
 - `/promo` - Manage promotional codes
 
-## Next Steps (Phase 8+)
+## 🐳 Docker Deployment (New!)
+
+**For External Deployment** (AWS, Google Cloud, DigitalOcean, VPS, etc.)
+
+We've added complete Docker support for deploying outside of Replit:
+
+### What's Included
+- ✅ **Dockerfile** - Production-ready multi-stage build
+- ✅ **docker-compose.yml** - Complete stack (bot + database + workers)
+- ✅ **.dockerignore** - Optimized build context
+- ✅ **PROJECT_STRUCTURE.md** - Complete file organization guide
+- ✅ **DOCKER_DEPLOYMENT.md** - Comprehensive deployment guide
+
+### Quick Docker Start
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit with your credentials
+nano .env
+
+# Start all services (bot + database + workers)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f bot
+```
+
+### Services
+- **bot** - Main Telegram bot application
+- **postgres** - PostgreSQL database with persistent storage
+- **account_checker** - Background worker for account monitoring
+- **daily_report** - Scheduled daily statistics report
+
+**Note**: ⚠️ Docker **does NOT work in Replit** (Replit uses Nix). Use these files for external deployment only.
+
+**See**: [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) for complete deployment guide
+
+## 📁 Project Structure
+
+The project now includes organized documentation and deployment files:
+- **Documentation**: See [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) for complete file organization
+- **Current Structure**: All Python files in root (tested and working)
+- **Future Structure**: `src/` directories prepared for future refactoring
+- **Docker Files**: Ready for production deployment
+
+## Next Steps (Phase 11)
+
+**Current Phase**: Integration Testing & Deployment
+- ✅ All systems operational and ready for testing
+- ✅ Docker deployment files created
+- 📋 Follow [TESTING_GUIDE.md](TESTING_GUIDE.md) for comprehensive testing
+- 📋 Review [fixtodo.md](fixtodo.md) for known issues and fixes
 
 The following features are planned for future phases:
 - Automated engagement delivery engine
 - Service delivery automation (views, reactions)
 - Real-time delivery tracking and monitoring
-- Reseller approval workflow
 - Advanced analytics dashboard
 
 ## Project Structure
