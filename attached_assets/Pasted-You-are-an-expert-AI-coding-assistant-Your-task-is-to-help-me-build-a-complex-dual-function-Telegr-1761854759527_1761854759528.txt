@@ -1,0 +1,77 @@
+You are an expert AI coding assistant. Your task is to help me build a complex, dual-function Telegram bot.
+
+Project Context
+What We Are Building
+We are creating a sophisticated Telegram bot that operates as a two-sided marketplace.
+
+Seller Side: The bot will automatically purchase Telegram accounts from users ("Sellers"). Users will be guided through a flow to submit their phone number and login codes, and upon successful session capture, they will be paid to an in-bot balance.
+
+Buyer (SaaS) Side: The bot will use this acquired pool of accounts to run a Software-as-a-Service (SaaS) business. "Buyers" can purchase plans to receive automated views and reactions on their channel posts, which will be delivered by the accounts we collected.
+
+Target Audience
+"Sellers": Telegram users who want to earn money by selling their accounts to the system.
+
+"Buyers": Telegram channel owners and administrators who want to purchase engagement (views, reactions). This also includes "Resellers".
+
+"Admins": The operators (us) who will manage the system, set prices, approve withdrawals, and monitor the account pool.
+
+Primary Goal
+The purpose is to create a fully automated business. We will buy a resource (Telegram accounts) and use it to sell a service (engagement). The bot must automate account acquisition, seller payouts, buyer payments, and service delivery.
+
+Your Next Task: Phase 4 (Seller Referral System & Admin Reporting)
+Your objective is to implement the referral program for sellers to drive growth and to build out the admin's reporting tools for monitoring seller-side activity.
+
+Please complete the following four tasks:
+
+4.1. "Refer & Earn" Implementation
+First, implement the user-facing referral system:
+
+
+"Refer & Earn" Button: Implement the logic for the "Refer & Earn" button.
+
+
+Generate Link: When pressed, generate a unique referral link for the user (e.g., t.me/YourBot?start=CODE).
+
+
+Handle New Referrals: Modify the /start command handler to check for this referral code. If a new user signs up using the link, you must store the referrer's user_id (as referrer_id) in the new user's record in the Users table.
+
+4.2. Referral Payout Logic
+Next, integrate the referral system with the payout logic from Phase 2:
+
+
+Commission Logic: Modify the "Account Sold" payout logic (from Phase 2.3). When a user successfully sells an account, check if they have a referrer_id.
+
+
+Credit Referrer: If they do, calculate the commission (e.g., 10%) based on the sale price. Add this commission amount to the referrer's seller_balance and also track it in their Referral Earnings stat.
+
+
+Admin Command: Implement an admin-only command /setref <percent> to set the referral commission percentage.
+
+4.3. Support Section & Admin Reporting Commands
+Implement the static support button and the core admin reporting commands:
+
+
+Support Button: Implement the "Support" button to show static text, such as contact information or a support link.
+
+Admin Commands:
+
+
+/accsell <username>: Create a command that shows a specific user's seller stats (e.g., balance, accounts sold, etc.).
+
+
+/alluser: Create a command that lists stats for all seller users, ensuring you implement pagination for the list.
+
+
+/stats: Create a command that shows overall system stats (e.g., Total Users, Total Accounts Sold, Total Banned, Total Earnings Distributed).
+
+4.4. Daily Auto Report (Seller Side)
+Finally, create a scheduled job to keep the admin informed:
+
+
+Scheduled Job: Create a scheduled script (e.g., a cron job) that is set to run automatically at midnight.
+
+
+Query Stats: This job must query the database to gather stats for the last 24 hours (e.g., new accounts sold, new bans) and lifetime stats (e.g., total active accounts, total banned accounts).
+
+
+Send Report: Format this information into a clear report and send it as a message to the admin.

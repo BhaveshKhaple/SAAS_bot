@@ -1,8 +1,8 @@
 import logging
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ContextTypes, CallbackQueryHandler
-from database import Database
-from config import ADMIN_IDS
+from src.database.database import Database
+from src.database.config import ADMIN_IDS
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

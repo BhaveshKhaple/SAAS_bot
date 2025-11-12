@@ -1,0 +1,212 @@
+Phase 1: Foundation & Core Bot Setup
+Goal: Establish the project's technical foundation, database, and basic bot framework for both "Seller" and "Buyer" functionalities.
+
+1.1. Technology Stack:
+
+Bot Framework: Choose a robust library (e.g., python-telegram-bot for handling commands, Telethon or Pyrogram for session management and client-side actions).
+
+Database: Select a database (e.g., PostgreSQL or MongoDB) to store all data.
+
+Server: Prepare a VPS or server to host the bot and its backend workers.
+
+1.2. Database Schema Design:
+
+Create initial tables/collections:
+
+Users: To store all users (both sellers and buyers), their balances (seller_balance, buyer_wallet_balance), referral info, and status (e.g., is_banned, can_withdraw).
+
+Admins: To manage admin users and their roles.
+
+Sold_Accounts: To store session strings, phone numbers, status (active, banned, full), and join counts.
+
+Withdrawals: To track seller payout requests (amount, status, user_id, method).
+
+1.3. Basic Bot Implementation:
+
+Initialize the bot with its API token.
+
+Implement the /start command.
+
+Implement basic user registration (saving new users to the Users table).
+
+Implement a simple admin authentication mechanism (e.g., checking user ID against the Admins list).
+
+1.4. Main Menu Implementation:
+
+Create the primary menu structure. Based on your specification, this bot serves two main purposes. The menu should reflect this, perhaps starting with the "Seller" menu from your first section.
+
+Implement the 5 main buttons for Sellers: Sell TG Account, Withdraw, Profile, Refer & Earn, Support.
+
+Phase 2: Core Feature - Account Selling Workflow
+Goal: Build the complete, automated flow for users to sell their Telegram accounts to the system.
+
+2.1. "Sell TG Account" Flow:
+
+Develop the conversation flow:
+
+Ask for Phone Number.
+
+Ask for OTP.
+
+Ask for 2FA Password (if enabled).
+
+Integrate Telethon/Pyrogram to use these credentials to log in and create a session string.
+
+2.2. Backend Session Processing:
+
+On successful login:
+
+Logout Devices: Script the bot to terminate all other active sessions for that account.
+
+Reset Password: Script the bot to change the account's 2FA password to a default (e.g., "5000").
+
+Save to DB: Securely save the session string and account details to the Sold_Accounts table.
+
+Import to SaaS: Tag the account as active and available for the views/reactions pool.
+
+2.3. User Confirmation & Payout:
+
+Bot asks user to confirm: "I Logged Out".
+
+When pressed, the backend verifies only the server session is active.
+
+If verified, instantly add the payout amount to the user's seller_balance.
+
+Send the success message: ✅ Account Sold Successfully | 💵 Payout: ₹X | 📦 Account ID: #12345.
+
+2.4. Admin Control:
+
+Implement /setprice <amount> command for admins to set the default payout for selling an account.
+
+Phase 3: Seller Management & Payouts
+Goal: Allow sellers to track their earnings and create a system for them to withdraw their money.
+
+3.1. "Profile" Section (Seller):
+
+Implement the "Profile" button.
+
+Query the Users and Sold_Accounts tables to display: Lifetime Earnings, Current Balance, Total Withdrawn, Accounts Sold, Banned Accounts, Referral Earnings.
+
+Task: Add a feature for users to set/update their payout info (e.g., UPI ID), as this is needed for withdrawals.
+
+3.2. "Withdraw" Flow:
+
+Implement the "Withdraw" button.
+
+Ask for the withdrawal amount.
+
+Progressive Limits: Implement logic to check the user's withdrawal history (1st, 2nd, 3rd, etc.) and enforce the minimum limit.
+
+Check if the amount is valid (>= limit and <= seller_balance).
+
+If valid, create a record in the Withdrawals table with status: pending.
+
+Notify the admin of a new pending withdrawal.
+
+3.3. Admin Withdrawal Management:
+
+Implement /withdraws pending command to list all pending requests.
+
+Create an inline keyboard flow for admins to select a request.
+
+Show detailed view: User stats, request amount, and the user's saved UPI info.
+
+Implement ✅ Approve and ❌ Reject buttons.
+
+Approve: Updates status to approved, deducts from seller_balance, adds to Total Withdrawn, and notifies the user.
+
+Reject: Updates status to rejected and notifies the user.
+
+3.4. Admin Controls:
+
+Implement /withdrawlimit 10,50,100,500,5000 command.
+
+Implement /stopwithdraw <username> & /allowwithdraw <username> (this will toggle a can_withdraw flag in the Users table).
+
+Implement /ban <username> & /unban <username>.
+
+Phase 4: Seller Referral System & Admin Reporting
+Goal: Implement the referral program for sellers and build out the admin's reporting tools.
+
+4.1. "Refer & Earn" (Seller):
+
+Implement the "Refer & Earn" button.
+
+Generate a unique referral link/code (t.me/YourBot?start=CODE) for each user.
+
+Modify the /start handler to check for a referral code and store the referrer_id for the new user.
+
+Modify the "Account Sold" payout logic (from Phase 2.3): If the seller has a referrer_id, calculate the commission (e.g., 10%) and add it to the referrer's seller_balance and Referral Earnings.
+
+Implement /setref <percent> for admin.
+
+4.2. "Support" Section:
+
+Implement the "Support" button to show static contact information.
+
+4.3. Admin Reporting (Seller Side):
+
+Implement /accsell <username>: Show a specific user's seller stats.
+
+Implement /alluser: Paginate and list stats for all seller users.
+
+Implement /stats: Show overall system stats (Total Users, Accounts Sold, Banned, Earnings Distributed, etc.).
+
+4.4. Daily Auto Report (Seller Side):
+
+Create a scheduled job (e.g., cron job) to run at midnight.
+
+The job will query the database to gather stats for the last 24 hours (new accounts sold, new bans) and lifetime stats (total active, total banned).
+
+Format and send this report to the admin.
+
+Phase 5: SaaS Foundation - "Buyer" UI & Account Pool Manager
+Goal: Build the user-facing menu for buying services and the backend admin panel for managing the account pool acquired in Phase 2.
+
+5.1. "Buyer" UI (USER PANEL - Final Structure):
+
+Modify the main menu (or create a new state) to show the "Buyer" buttons:
+
+Buy Plan
+
+Deposit
+
+My Plans
+
+Plan History
+
+Referral Program (New, for buyers)
+
+Reseller Panel
+
+Support (Can be the same as the seller's)
+
+5.2. Database Schema (SaaS):
+
+Add new tables/collections:
+
+SaaS_Orders: To store active/pending/expired plans (user_id, plan_type, duration, views, posts, channel, status).
+
+SaaS_Rates: To store the 4 base rates set by the admin.
+
+Promo_Codes: To store promo codes, values, and usage limits.
+
+SaaS_Referrals: For the buyer referral program.
+
+Resellers: To manage reseller status, margins, and sales.
+
+5.3. Admin: Telegram Accounts Manager (Backend):
+
+This is the core of the SaaS engine.
+
+Implement /accounts (or a button): List all accounts from Sold_Accounts with status (Active, Banned, Full) and Joined Channels: X/500.
+
+Implement Add New Account (manual admin add flow).
+
+Implement Remove Account.
+
+Implement Check Account Status (a script that logs in with each session to check its status).
+
+Implement Low Pool Alert (a scheduled job to notify admin if active accounts < 100).
+
+Implement Account Usage Logs (to track which account delivers what).

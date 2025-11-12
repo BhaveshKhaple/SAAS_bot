@@ -1,110 +1,52 @@
-# Telegram Marketplace Bot - Phase 2 Complete
+# Telegram Marketplace Bot
 
-## Project Overview
-A sophisticated dual-function Telegram bot that operates as a two-sided marketplace:
-- **Seller Side**: Automated purchasing of Telegram accounts from users (✅ Phase 2 Complete)
-- **Buyer Side**: SaaS platform for delivering automated views and reactions to channel posts (Future)
+## Overview
+This project is a sophisticated dual-function Telegram bot designed to operate as a two-sided marketplace. It facilitates the automated purchasing of Telegram accounts from sellers and provides a SaaS platform for buyers to deliver automated views and reactions to Telegram channel posts. The bot includes comprehensive admin tools for account pool management, reporting, and payment processing.
 
-## Current Implementation (Phase 1 & 2)
-
-### Completed Features
-
-#### Phase 1: Foundation
-1. **Database Schema**: PostgreSQL database with 5 core tables
-   - Users: Stores all users (sellers/buyers) with balance tracking
-   - Admins: Manages admin users and their roles
-   - Sold_Accounts: Stores session strings and account status
-   - Withdrawals: Tracks seller payout requests
-   - Settings: Stores system configuration (account prices, etc.)
-
-2. **Bot Framework**: 
-   - python-telegram-bot for command handling
-   - Telethon library for session management
-   - Automatic user registration on /start
-   - Admin authentication system
-
-3. **Seller Menu**: 5 interactive buttons
-   - 💰 Sell TG Account
-   - 💸 Withdraw
-   - 👤 Profile
-   - 🎁 Refer & Earn
-   - 💬 Support
-
-#### Phase 2: Account Selling Workflow
-1. **Conversational Flow**:
-   - Phone number collection with regex validation
-   - OTP code verification with Telethon
-   - 2FA password support for protected accounts
-   - Comprehensive error handling and user feedback
-
-2. **Session Management**:
-   - Session string creation and secure storage
-   - Automatic termination of other active sessions
-   - 2FA password reset to default (5000)
-   - Session verification before payout
-
-3. **Payment Processing**:
-   - Instant payout to seller_balance
-   - Automatic referral commission distribution
-   - User confirmation before final payout
-   - Account status tracking (processing → active)
-
-4. **Admin Controls**:
-   - `/setprice` command to adjust account prices
-   - Dynamic pricing system stored in settings table
-   - Permission-based access control
-
-### Technology Stack
-- **Language**: Python 3.11
-- **Framework**: python-telegram-bot (v22.5)
-- **Session Management**: Telethon (v1.41.2)
-- **Database**: PostgreSQL (via psycopg2-binary)
-- **Environment**: python-dotenv
-
-### Environment Variables Required
-- `BOT_TOKEN`: Telegram Bot API token (from @BotFather)
-- `TELEGRAM_API_ID`: Telegram API ID (from my.telegram.org)
-- `TELEGRAM_API_HASH`: Telegram API hash (from my.telegram.org)
-- `ADMIN_IDS`: Comma-separated list of admin user IDs
-- `DATABASE_URL`: PostgreSQL connection string (auto-configured)
-
-### Project Structure
-```
-.
-├── bot.py              # Main bot logic and handlers
-├── account_seller.py   # Account selling conversation flow
-├── database.py         # Database operations and schema
-├── config.py           # Configuration and environment variables
-├── setup_admin.py      # Admin setup utility
-├── .env.example        # Example environment variables
-├── .gitignore          # Git ignore rules
-└── replit.md          # This file
-```
-
-### Next Phase Features (Phase 3+)
-- Withdrawal request system with admin approval workflow
-- Buyer-side menu and plan purchase interface
-- Automated engagement delivery system using sold accounts
-- Service delivery management (views, reactions)
-- Admin panel for statistics and management
-- User management tools
+**Key Capabilities:**
+- **Seller Side**: Automated workflow for users to sell Telegram accounts, including phone number/OTP/2FA verification, secure session storage, and instant payouts with referral commissions.
+- **Buyer Side**: A SaaS platform offering various plans for automated views and reactions, deposit systems with multiple payment methods (UPI, crypto, etc.), promo code functionality, and plan management.
+- **Admin Tools**: Extensive features for managing user accounts, account pools, pricing, referral commissions, deposits, and automated reporting.
+- **Automated Account Monitoring**: System to check account statuses, detect banned accounts, and manage the active account pool.
 
 ## User Preferences
 - Clean, modular code structure
 - Comprehensive database schema
 - Interactive menu-based interface
 - Secure session and secret management
+- Always Update TESTING_GUIDE.md: When implementing any new phase or major feature:
+   - Add comprehensive test cases to TESTING_GUIDE.md
+   - Include step-by-step testing instructions
+   - Add a verification checklist for the phase
+   - Update the "Working Features" section to reflect new functionality
+   - Update the "Not Yet Implemented" section to remove completed features
 
-## Recent Changes
-- 2025-10-30: Phase 2 implementation completed
-  - Created complete account selling workflow with Telethon
-  - Implemented conversational flow for phone/OTP/2FA collection
-  - Added session management (terminate sessions, reset 2FA)
-  - Built payout system with referral commission distribution
-  - Added admin /setprice command for dynamic pricing
-  - Fixed error handling to prevent invalid state transitions
-- 2025-10-30: Initial Phase 1 implementation completed
-  - Created database schema with 5 core tables (including Settings)
-  - Implemented bot framework with user registration
-  - Added admin authentication mechanism
-  - Built main seller menu with 5 buttons
+## System Architecture
+The bot is built on Python 3.11, utilizing `python-telegram-bot` for handling Telegram interactions and `Telethon` for direct Telegram API operations like session management and account verification. PostgreSQL is used as the primary database, managed via `psycopg2-binary`. The project follows a modular structure with dedicated directories for bot logic, database operations, admin features, seller workflows, buyer functionalities, and shared utilities.
+
+**UI/UX Decisions:**
+- Interactive menu-based interface with inline keyboard buttons for conversational flows.
+- Clear user feedback, error handling, and progress indicators in multi-step processes.
+- Seamless switching between Seller and Buyer modes.
+
+**Technical Implementations:**
+- **Conversational Flows**: Extensively uses `python-telegram-bot`'s conversation handlers for multi-step user interactions (e.g., account selling, plan purchasing).
+- **Session Management**: Leverages `Telethon` for creating, storing, and managing Telegram user sessions securely, including handling OTP and 2FA verification.
+- **Dynamic Pricing & Rates**: All pricing (account sales, SaaS plans) is dynamically fetched from the database, allowing admin configuration.
+- **Automated Tasks**: Scheduled jobs for daily reports, account status checks, and future service delivery.
+- **Database Schema**: Designed with 11 core tables including `users`, `sold_accounts`, `saas_orders`, `saas_rates`, `deposits`, and `promo_codes` to support marketplace and SaaS functionalities.
+
+**Feature Specifications:**
+- **Account Selling Workflow**: Guides sellers through providing phone number, OTP, and 2FA password, then stores session and pays out.
+- **Buyer SaaS Platform**: Offers unlimited/limited views and reactions plans, with a multi-step purchase conversation, real-time price calculation, and order management.
+- **Payment Systems**: Supports UPI for deposits with manual admin verification, and integrates a promo code system for discounts.
+- **Account Pool Management**: Admin commands to view, add, remove accounts, and monitor pool statistics.
+- **Referral System**: Tracks referrals and automates commission payouts for both sellers and buyers.
+- **Admin Reporting**: Commands for user statistics, account sales, and overall system metrics.
+
+## External Dependencies
+- **Telegram Bot API**: Primary interface for bot communication (via `python-telegram-bot`).
+- **Telegram API (MTProto)**: Used for direct interaction with Telegram accounts (via `Telethon`) for session management, verification, and service delivery.
+- **PostgreSQL**: Relational database for all persistent data storage.
+- **Nix/uv**: Package management and environment setup.
+- **python-dotenv**: For managing environment variables.

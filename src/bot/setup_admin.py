@@ -1,6 +1,7 @@
 import os
-from database import Database
-from config import ADMIN_IDS
+from dotenv import load_dotenv
+from src.database.database import Database
+from src.database.config import ADMIN_IDS
 
 def setup_admins():
     db = Database()

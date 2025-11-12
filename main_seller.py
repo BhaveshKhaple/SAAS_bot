@@ -1,4 +1,5 @@
 import logging
+import os
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import (
     Application,
@@ -9,14 +10,15 @@ from telegram.ext import (
     filters,
     ContextTypes,
 )
-from database import Database
-from config import BOT_TOKEN, MIN_WITHDRAWAL
-import random
-import string
+from src.database.database import Database
+import src.seller.seller_profile as seller_profile
+import src.seller.seller_withdrawals as seller_withdrawals
+import src.admin.admin_controls as admin_controls
+import src.admin.admin_reporting as admin_reporting
+from src.seller.account_seller import get_account_sell_handler
 
-import seller_profile
-import seller_withdrawals
-import admin_controls
+# --- NEW: Import Seller Bot Token ---
+from src.database.config import SELLER_BOT_TOKEN, ADMIN_IDS, MIN_WITHDRAWAL
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -27,9 +29,12 @@ logger = logging.getLogger(__name__)
 db = Database()
 
 def generate_referral_code(length=8):
+    import random
+    import string
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
 def get_seller_menu():
+    """Returns the ReplyKeyboardMarkup for the seller menu."""
     keyboard = [
         [KeyboardButton("💰 Sell TG Account")],
         [KeyboardButton("💸 Withdraw"), KeyboardButton("👤 Profile")],
@@ -38,6 +43,7 @@ def get_seller_menu():
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 def get_admin_menu():
+    """Returns the ReplyKeyboardMarkup for the admin menu."""
     keyboard = [
         [KeyboardButton("📊 Statistics"), KeyboardButton("👥 Users")],
         [KeyboardButton("💳 Withdrawals"), KeyboardButton("📱 Accounts")],
@@ -46,8 +52,8 @@ def get_admin_menu():
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handles the /start command for the seller bot."""
     user = update.effective_user
-    
     existing_user = db.get_user(user.id)
     
     if not existing_user:
@@ -58,6 +64,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         referred_by = None
         if context.args and len(context.args) > 0:
             ref_code = context.args[0]
+            # Check for both seller and buyer referral codes
+            if ref_code.startswith('buyref_'):
+                ref_code = ref_code.replace('buyref_', '')
+                
             referrer = db.get_user_by_referral(ref_code)
             if referrer:
                 referred_by = referrer['user_id']
@@ -91,12 +101,11 @@ Choose an option from the menu below to get started:
 👋 Welcome back, {user.first_name}!
 
 💰 **Seller Balance:** ${existing_user['seller_balance']:.2f}
-💳 **Buyer Balance:** ${existing_user['buyer_wallet_balance']:.2f}
 
 Choose an option from the menu below:
 """
         if is_admin:
-            welcome_message += "\n🔑 **Admin Access Granted**"
+            welcome_message += "\n🔑 **Admin Access Granted** (Seller Bot)"
     
     is_admin = db.is_admin(user.id)
     menu = get_admin_menu() if is_admin else get_seller_menu()
@@ -104,17 +113,18 @@ Choose an option from the menu below:
     await update.message.reply_text(welcome_message, reply_markup=menu)
 
 async def handle_referral(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handles the 'Refer & Earn' button."""
     user = update.effective_user
     user_data = db.get_user(user.id)
     
     referral_count = db.get_referral_count(user.id)
     
     message = f"""
-🎁 **Refer & Earn**
+🎁 **Refer & Earn (Seller Program)**
 
-Invite your friends and earn commission on their earnings!
+Invite your friends to sell their accounts and earn commission!
 
-**Your Referral Link:**
+**Your Seller Referral Link:**
 `t.me/{context.bot.username}?start={user_data['referral_code']}`
 
 **Your Stats:**
@@ -123,14 +133,13 @@ Invite your friends and earn commission on their earnings!
 
 **How it works:**
 1. Share your referral link
-2. When someone signs up using your link
-3. You earn a percentage of their account sales!
-
-💡 The more people you refer, the more you earn!
+2. When someone signs up using your link and sells an account
+3. You earn a percentage of their account sale!
 """
     await update.message.reply_text(message, parse_mode='Markdown')
 
 async def handle_support(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handles the 'Support' button."""
     message = """
 💬 **Support**
 
@@ -139,21 +148,20 @@ Need help? We're here for you!
 **Common Questions:**
 • How long does verification take? Usually instant!
 • When will I receive payment? After successful account verification
-• How do withdrawals work? Request via /withdraw, we process within 24-48h
+• How do withdrawals work? Request via the Withdraw button
 
 **Contact Admin:**
-For any issues, questions, or concerns:
-• Use /admin command to send a message to our team
-• Or contact @YourSupportUsername
+For any issues, questions, or concerns, please contact our support team.
 
 **Business Hours:**
 Monday - Sunday: 9 AM - 11 PM (UTC)
 
 We typically respond within a few hours!
 """
-    await update.message.reply_text(message)
+    await update.message.reply_text(message, parse_mode='Markdown')
 
 async def setprice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Admin command: /setprice <amount>"""
     if not db.is_admin(update.effective_user.id):
         await update.message.reply_text("❌ This command is only available to admins.")
         return
@@ -185,6 +193,7 @@ async def setprice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Invalid price format. Please use a number (e.g., 15.00)")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handles text messages and buttons from the seller menu."""
     text = update.message.text
     
     if text == "👤 Profile":
@@ -201,14 +210,26 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🔙 Back to User Menu":
         if db.is_admin(update.effective_user.id):
             await update.message.reply_text("Switching to user menu...", reply_markup=get_seller_menu())
-    else:
-        is_admin = db.is_admin(update.effective_user.id)
-        if is_admin and text in ["📊 Statistics", "👥 Users", "💳 Withdrawals", "📱 Accounts", "⚙️ Settings"]:
-            await update.message.reply_text(f"Admin feature '{text}' - Coming soon in future phases!")
-        elif text not in ["💰 Sell TG Account", "💸 Withdraw", "💳 Set Payout Info"]:
+    # --- Admin Menu Handling ---
+    elif db.is_admin(update.effective_user.id):
+        if text == "📊 Statistics":
+            await admin_reporting.stats_command(update, context)
+        elif text == "👥 Users":
+            await admin_reporting.alluser_command(update, context)
+        elif text == "💳 Withdrawals":
+            await admin_controls.list_pending_withdrawals(update, context)
+        elif text == "📱 Accounts":
+            await context.bot.send_message(update.effective_chat.id, "Please use the /accounts command.")
+        elif text == "⚙️ Settings":
+            await context.bot.send_message(update.effective_chat.id, "Admin settings are command-based (e.g., /setprice, /setref, /withdrawlimit).")
+        else:
             await update.message.reply_text("Please use the menu buttons below to navigate.")
+    else:
+        await update.message.reply_text("Please use the menu buttons below to navigate.")
+
 
 def main():
+    """Starts the Seller Bot."""
     try:
         db.init_schema()
         logger.info("Database schema initialized")
@@ -216,14 +237,13 @@ def main():
         logger.error(f"Failed to initialize database: {e}")
         return
     
-    if not BOT_TOKEN:
-        logger.error("BOT_TOKEN not found in environment variables!")
+    if not SELLER_BOT_TOKEN:
+        logger.error("SELLER_BOT_TOKEN not found in environment variables!")
         return
     
-    application = Application.builder().token(BOT_TOKEN).build()
+    application = Application.builder().token(SELLER_BOT_TOKEN).build()
     
-    from account_seller import get_account_sell_handler
-    
+    # --- Conversation Handlers ---
     payout_handler = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^💳 Set Payout Info$"), seller_profile.start_set_payout)],
         states={
@@ -244,24 +264,35 @@ def main():
     application.add_handler(get_account_sell_handler())
     application.add_handler(payout_handler)
     application.add_handler(withdraw_handler)
-    
+
+    # --- Command Handlers ---
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("setprice", setprice))
+    
+    # Seller Admin Reporting
+    application.add_handler(CommandHandler("setref", admin_reporting.setref_command))
+    application.add_handler(CommandHandler("accsell", admin_reporting.accsell_command))
+    application.add_handler(CommandHandler("alluser", admin_reporting.alluser_command))
+    application.add_handler(CommandHandler("stats", admin_reporting.stats_command))
+    
+    # Seller Admin Controls
     application.add_handler(CommandHandler("withdraws", admin_controls.list_pending_withdrawals))
     application.add_handler(CommandHandler("withdrawlimit", admin_controls.set_withdrawal_limits))
     application.add_handler(CommandHandler("ban", admin_controls.ban_user_command))
     application.add_handler(CommandHandler("unban", admin_controls.unban_user_command))
     application.add_handler(CommandHandler("stopwithdraw", admin_controls.stop_withdraw_command))
     application.add_handler(CommandHandler("allowwithdraw", admin_controls.allow_withdraw_command))
-    
+
+    # Callback Handlers for admin controls
     application.add_handler(CallbackQueryHandler(admin_controls.view_withdrawal_detail, pattern="^withdrawal_view_"))
     application.add_handler(CallbackQueryHandler(admin_controls.approve_withdrawal, pattern="^withdrawal_approve_"))
     application.add_handler(CallbackQueryHandler(admin_controls.reject_withdrawal, pattern="^withdrawal_reject_"))
     application.add_handler(CallbackQueryHandler(admin_controls.back_to_withdrawal_list, pattern="^withdrawal_back$"))
-    
+
+    # --- Message Handler ---
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    logger.info("Bot started successfully!")
+    logger.info("Seller Bot (Bot 1) started successfully!")
     application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':

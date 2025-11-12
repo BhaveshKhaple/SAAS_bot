@@ -1,7 +1,7 @@
 import logging
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ContextTypes, ConversationHandler
-from database import Database
+from src.database.database import Database
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
